@@ -1,0 +1,30 @@
+aphians/
+├── client/         # React frontend
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── LandingPage.jsx
+│   │   │   ├── ProfileForm.jsx
+│   │   │   └── ProfilePage.jsx
+│   │   ├── App.jsx
+│   │   ├── index.jsx
+│   │   └── index.html
+│   ├── package.json
+│   └── .gitignore
+├── server/         # Node.js backend
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── db.js
+│   │   ├── auth/
+│   │   │   └── passport.js
+│   │   ├── routes/
+│   │   │   ├── auth.js
+│   │   │   └── profile.js
+│   │   └── index.js
+│   ├── uploads/            # Directory for uploaded files
+│   ├── package.json
+│   ├── .env
+│   └── .gitignore
+├── database/               # MySQL schema
+│   └── schema.sql
+└── README.md
