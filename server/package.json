@@ -14,14 +14,11 @@
     "mysql2": "^3.6.0",
     "passport": "^0.6.0",
     "passport-apple": "^2.0.2",
-<<<<<<< HEAD
     "passport-facebook": "^3.0.0",
-    "passport-google-oauth20": "^2.0.0"
-=======
+    "passport-google-oauth20": "^2.0.0",
     "express-session": "^1.17.3",
     "cors": "^2.8.5",
     "multer": "^1.4.5-lts.1",
     "dotenv": "^16.4.5"
->>>>>>> 70034c2 (Updated package.json to remove Yahoo)
   }
 }
