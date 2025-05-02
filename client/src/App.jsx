@@ -4,7 +4,14 @@ import ProfilePage from './components/ProfilePage';
 
 const App = () => {
   const path = window.location.pathname;
-  return path === '/' ? <LandingPage /> : <ProfilePage />;
+  console.log('Current path:', path);
+  if (path === '/' || path === '') {
+    return <LandingPage />;
+  }
+  if (path === '/profile') {
+    return <ProfilePage />;
+  }
+  return <div>404 - Page Cannot be Not Found</div>;
 };
 
 export default App;

@@ -12,18 +12,18 @@ const LandingPage = () => (
           and stay connected with your classmates.
         </p>
         <div className="space-x-4">
-          <a href="/auth/google" 
+          <a href="/aphians/auth/google" 
              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
             Sign Up / Login with Google
           </a>
-          <a href="/auth/facebook" 
+          {/* <a href="/auth/facebook" 
              className="bg-blue-800 text-white px-6 py-3 rounded-lg hover:bg-blue-900">
             Sign Up / Login with Facebook
           </a>
           <a href="/auth/apple" 
              className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800">
             Sign Up / Login with Apple
-          </a>
+          </a> */}
           {/* <a href="/auth/yahoo" 
              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700">
             Sign Up / Login with Yahoo
