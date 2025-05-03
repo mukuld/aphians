@@ -1,33 +1,8 @@
-// import { defineConfig } from 'vite';
-// import react from '@vitejs/plugin-react';
-
-// export default defineConfig({
-//   plugins: [react()],
-//   server: {
-//     host: "0.0.0.0",
-//     port: 5173,
-//     open: true,
-//     proxy: {
-//       '/api': {
-//         target: 'http://192.168.1.40:5000',
-//         changeOrigin: true,
-//         secure: false,
-//         // rewrite: (path) => path.replace(/^\/api/, '/api') // Ensure /api prefix is preserved
-//       },
-//       '/auth': {
-//         target: 'http://192.168.1.40:5000',
-//         changeOrigin: true,
-//         secure: false
-//       }
-//     }
-//   }
-// });
-
 import { defineConfig } from 'vite';
   import react from '@vitejs/plugin-react';
 
   export default defineConfig({
-    base: '/aphians/',
+    // base: '',
     plugins: [react()],
     server: {
       host: '0.0.0.0',
@@ -35,20 +10,27 @@ import { defineConfig } from 'vite';
       open: true,
       proxy: {
         '/aphians/api': {
-          target: 'https://www.dharwadkar.com',
+          target: 'http://localhost:5000',
           changeOrigin: true,
-          secure: true
+          rewrite: (path) => path.replace(/^\/aphians\/api/, '/api')
         },
         '/aphians/auth': {
-          target: 'https://www.dharwadkar.com',
+          target: 'http://localhost:5000',
           changeOrigin: true,
-          secure: true
+          rewrite: (path) => path.replace(/^\/aphians\/auth/, '/auth')
         }
       }
     },
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
-      sourcemap: false
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          assetFileNames: 'assets/[name]-[hash][extname]',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js'
+        }
+      }
     }
   });
