@@ -4,7 +4,7 @@ const cors = require('cors');
 const passport = require('./auth/passport');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
-const port = process.env.PORT || port;
+const port = process.env.PORT || 5000;
 require('dotenv').config();
 
 const app = express();
@@ -16,7 +16,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use(session({ secret: 'process.env.SESSION_SECRET', resave: false, saveUninitialized: false }));
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
 
