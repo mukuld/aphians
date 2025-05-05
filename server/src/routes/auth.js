@@ -2,12 +2,12 @@ const express = require('express');
 const passport = require('../auth/passport');
 const router = express.Router();
 
-router.get('/google', passport.authenticate('google', { scope: ['openid', 'profile', 'email'] }));
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/aphians' }),
+  passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
     console.log('Google auth callback, user:', req.user);
-    res.redirect('https://www.dharwadkar.com/aphians/profile');
+    res.redirect('/profile');
   }
 );
 

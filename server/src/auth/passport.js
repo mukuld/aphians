@@ -1,7 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
-const AppleStrategy = require('passport-apple');
+// const FacebookStrategy = require('passport-facebook').Strategy;
+// const AppleStrategy = require('passport-apple');
 // const YahooOauthTokenStrategy = require('passport-yahoo-oauth-token');
 const db = require('../config/db');
 require('dotenv').config();
@@ -18,7 +18,7 @@ passport.deserializeUser((id, done) => {
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: '/auth/google/callback'
+  callbackURL: 'https://www.dharwadkar.com/aphians/auth/google/callback'
 }, (accessToken, refreshToken, profile, done) => {
   db.query('SELECT * FROM users WHERE google_id = ?', [profile.id], (err, results) => {
     if (results.length > 0) {
