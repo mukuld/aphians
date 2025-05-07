@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 
 const ProfileForm = ({ profile, onSave }) => {
   const [formData, setFormData] = useState(profile || {});
+  const [error, setError] = useState(null);
+
+  // Format date to yyyy-MM-dd
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Returns yyyy-MM-dd
+  };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -15,17 +23,24 @@ const ProfileForm = ({ profile, onSave }) => {
     e.preventDefault();
     const formDataToSend = new FormData();
     Object.keys(formData).forEach((key) => {
-      formDataToSend.append(key, formData[key]);
+      const value = key === 'birthday' ? formatDate(formData[key]) : formData[key];
+      formDataToSend.append(key, value);
     });
     try {
-      const response = await fetch('/api/profile', {
+      console.log('Sending POST to /aphians/api/profile with FormData');
+      const response = await fetch('/aphians/api/profile', {
         method: 'POST',
-        body: formDataToSend
+        body: formDataToSend,
+        credentials: 'include'
       });
       if (response.ok) {
+        const result = await response.json();
+        console.log('Profile saved:', result);
+        setError(null);
         onSave(formData);
       } else {
-        throw new Error('Failed to save profile');
+        const errorText = await response.text();
+        throw new Error('Failed to save profile: ${response.status} ${response.statusText} - ${errorText}`');
       }
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -71,10 +86,14 @@ const ProfileForm = ({ profile, onSave }) => {
           placeholder="Child 1 Name" className="p-2 border rounded" />
         <input name="child_2_name" value={formData.child_2_name || ''} onChange={handleChange} 
           placeholder="Child 2 Name" className="p-2 border rounded" />
+          <input name="child_3_name" value={formData.child_3_name || ''} onChange={handleChange} 
+          placeholder="Child 3 Name" className="p-2 border rounded" />
         <input name="child_1_age" type="number" value={formData.child_1_age || ''} onChange={handleChange} 
           placeholder="Child 1 Age" className="p-2 border rounded" />
         <input name="child_2_age" type="number" value={formData.child_2_age || ''} onChange={handleChange} 
           placeholder="Child 2 Age" className="p-2 border rounded" />
+        <input name="child_3_age" type="number" value={formData.child_3_age || ''} onChange={handleChange} 
+          placeholder="Child 3 Age" className="p-2 border rounded" />        
         <textarea name="special_message" value={formData.special_message || ''} onChange={handleChange} 
           placeholder="Special Message for Friends" className="p-2 border rounded col-span-2" />
         <input name="latest_photo" type="file" onChange={handleChange}  className="p-2 border rounded" />
