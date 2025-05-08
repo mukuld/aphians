@@ -1,269 +1,166 @@
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
-const express = require('express');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
-const cors = require('cors');
-const passport = require('./auth/passport');
-const authRoutes = require('./routes/auth');
-const profileRoutes = require('./routes/profile');
-const path = require('path');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const port = process.env.PORT || 5000;
+import dotenv from 'dotenv';
+import express from 'express';
+import path, { resolve } from 'path';
+import cors from 'cors';
+import { v4 as uuidv4 } from 'uuid';
+import passport from './auth/passport.js';
+import authRoutes from './routes/auth.routes.js';
+import profileRoutes from './routes/profile.routes.js';
+import { sessionMiddleware, sessionStore } from './middleware/sessionMiddleware.js';
+import { ensureAuthenticated } from './middleware/authMiddleware.js';
+import log from './utils/logger.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
+// Setup __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+// Resolve upload directory from environment variable
+const uploadDir = resolve(__dirname, '..', process.env.UPLOAD_DIR || 'Uploads');
+log.debug('Resolved upload directory:', uploadDir);
+
+// Initialize server values
 const bootId = uuidv4();
 const pid = process.pid;
+const port = process.env.PORT || 5000;
+const appName = process.env.APP_NAME || 'Aphians';
+const domain = process.env.DOMAIN || 'dharwadkar.com';
+const sessionCookieName = process.env.SESSION_COOKIE_NAME || 'connect.sid';
+const originUrl = `https://www.${domain}`;
 
-// Ensure log file exists
-const logFile = '/var/log/aphians-server.log';
-try {
-  if (!fs.existsSync(logFile)) {
-    fs.writeFileSync(logFile, '');
-    console.log(`Created log file: ${logFile}`);
-  }
-  fs.accessSync(logFile, fs.constants.W_OK);
-  console.log(`Log file writable: ${logFile}`);
-} catch (err) {
-  console.error(`Log file error: ${err.message}`);
-  process.exit(1);
-}
-
-// Custom logging function
-const log = (message) => {
-  const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] [PID:${pid}] ${message}\n`;
-  console.log(logMessage.trim());
-  try {
-    fs.appendFileSync(logFile, logMessage);
-  } catch (err) {
-    console.error(`File log error: ${err.message}`);
-  }
-};
-
-// Initialize session store
-const sessionStore = new MySQLStore({
-  host: process.env.DATABASE_HOST || 'localhost',
-  user: process.env.DATABASE_USER || 'root',
-  password: process.env.DATABASE_PASSWORD || '',
-  database: process.env.DATABASE_NAME || 'aphians_db',
-  clearExpired: true,
-  checkExpirationInterval: 900000, // 15 minutes
-  expiration: 24 * 60 * 60 * 1000, // 24 hours
-  createDatabaseTable: true,
-  schema: {
-    tableName: 'sessions',
-    columnNames: {
-      session_id: 'session_id',
-      expires: 'expires',
-      data: 'data'
-    }
-  }
-});
-
-sessionStore.on('error', (err) => {
-  log('Session store error: ' + err.message + ' | Stack: ' + err.stack);
-});
-
-// Test session store
-if (require.main === module) {
-  log(`Boot ID: ${bootId}`);
-  log('SESSION_SECRET: ' + (process.env.SESSION_SECRET ? 'Set' : 'Not set'));
-  log('Runtime __dirname: ' + __dirname);
-  log('Expected .env path: ' + require('path').resolve(__dirname, '../.env'));
+if (import.meta.url === `file://${process.argv[1]}`) {
+  log.debug(`Boot ID: ${bootId}`);
+  log.debug(`App Name: ${appName}`);
+  log.debug('SESSION_SECRET: ' + (process.env.SESSION_SECRET ? 'Set' : 'Not set'));
+  log.debug('Runtime __dirname: ' + __dirname);
+  log.debug('Expected .env path: ' + path.resolve(__dirname, '../.env'));
 
   if (!process.env.SESSION_SECRET) {
-    log('Error: SESSION_SECRET is not set in .env');
-    process.exit(1);
-  }
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    log('Error: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in .env');
+    log.error('Error: SESSION_SECRET is not set in .env');
     process.exit(1);
   }
 
-  log('Testing session store...');
-  const testSessionId = 'test-session-' + Date.now();
-  sessionStore.set(testSessionId, {
-    cookie: { maxAge: 24 * 60 * 60 * 1000 },
-    data: { test: 'test-data' }
-  }, (err) => {
-    if (err) {
-      log('Session store test write error: ' + err.message + ' | Stack: ' + err.stack);
-      process.exit(1);
-    }
-    log('Session store test write successful');
-    sessionStore.get(testSessionId, (err, session) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    log.error('Error: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in .env');
+    process.exit(1);
+  }
+
+  // Session store test
+  log.info('Testing session store...');
+  const testSessionId = `test-session-${Date.now()}`;
+  await new Promise((resolve, reject) => {
+    sessionStore.set(testSessionId, {
+      cookie: { maxAge: 24 * 60 * 60 * 1000 },
+      data: { test: 'test-data' }
+    }, (err) => {
       if (err) {
-        log('Session store test read error: ' + err.message + ' | Stack: ' + err.stack);
-        process.exit(1);
+        log.error('Session store write error:', err);
+        reject(err);
+      } else {
+        log.info('Session store write successful');
+        sessionStore.get(testSessionId, (err, session) => {
+          if (err) {
+            log.error('Session store read error:', err);
+            reject(err);
+          } else {
+            log.info(`Session read: ${JSON.stringify(session)}`);
+            sessionStore.destroy(testSessionId, (err) => {
+              if (err) log.error('Session destroy error:', err);
+              log.info('Test session destroyed');
+              resolve();
+            });
+          }
+        });
       }
-      log('Session store test read: ' + JSON.stringify(session));
-      sessionStore.destroy(testSessionId, (err) => {
-        if (err) {
-          log('Session store test destroy error: ' + err.message + ' | Stack: ' + err.stack);
-        }
-        log('Session store test session destroyed');
-      });
     });
+  }).catch((err) => {
+    log.error('Session store test failed:', err);
+    process.exit(1);
   });
 }
 
 const app = express();
-
 app.set('trust proxy', 1);
 
-const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  store: sessionStore,
-  cookie: {
-    secure: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax',
-    httpOnly: true,
-    path: '/',
-    domain: '.dharwadkar.com'
-  },
-  name: 'connect.sid'
-});
-
+// Middleware
 app.use(sessionMiddleware);
 
 app.use((req, res, next) => {
   const rawCookie = req.headers.cookie || 'none';
-  const cookieSid = req.cookies && req.cookies['connect.sid'] ? req.cookies['connect.sid'] : 'none';
-  log('Session middleware: ' + JSON.stringify({
+  const cookieSid = req.cookies?.[sessionCookieName] || 'none';
+
+  log.debug('Session Middleware', {
     sessionID: req.sessionID,
-    rawCookie: rawCookie,
-    cookieSid: cookieSid,
-    session: req.session,
-    cookies: req.headers.cookie,
+    rawCookie,
+    cookieSid,
     userAgent: req.headers['user-agent'],
     url: req.originalUrl
-  }));
-  if (cookieSid !== 'none' && cookieSid !== req.sessionID) {
-    log('Session ID mismatch: Cookie SID: ' + cookieSid + ', Server SID: ' + req.sessionID);
-  }
+  });
+
+  // Set isPopulated only for new sessions
   if (req.session && !req.session.isPopulated) {
-    log('New session, saving...');
+    log.info('New session detected. Marking as populated...');
     req.session.isPopulated = true;
-    req.session.save((err) => {
-      if (err) {
-        log('Session save middleware error: ' + err.message + ' | Stack: ' + err.stack);
-      } else {
-        log('Session saved in middleware');
-      }
-    });
   }
-  sessionStore.get(req.sessionID, (err, sessionData) => {
-    if (err) {
-      log('Session store get error for ' + req.sessionID + ': ' + err.message + ' | Stack: ' + err.stack);
-    } else {
-      log('Session store get for ' + req.sessionID + ': ' + JSON.stringify(sessionData));
-    }
-  });
+
+  // Log Set-Cookie header on response finish
   res.on('finish', () => {
-    if (res.get('Set-Cookie')) {
-      log('Set-Cookie sent for ' + req.originalUrl + ': ' + res.get('Set-Cookie'));
+    const setCookieHeader = res.get('Set-Cookie');
+    if (setCookieHeader) {
+      log.debug(`Set-Cookie sent for ${req.originalUrl}: ${setCookieHeader}`);
     }
   });
+
+  // Timeout middleware to prevent hangs
+  const timeout = setTimeout(() => {
+    log.error(`Middleware timeout for ${req.originalUrl}`);
+    res.status(504).json({ error: 'Gateway Timeout' });
+  }, 10000);
+
+  // Clear timeout on response
+  res.on('finish', () => clearTimeout(timeout));
+
+  log.debug('Session Middleware: Completed');
   next();
 });
 
 app.use(cors({
-  origin: ['https://www.dharwadkar.com'],
+  origin: originUrl,
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/Uploads', express.static(path.join(__dirname, '../Uploads')));
+app.use('/uploads', express.static(uploadDir));
 
 app.get('/', (req, res) => {
-  res.json({ message: 'Aphians Server Running' });
+  res.json({ message: `${appName} Server Running` });
 });
 
-app.get('/api/auth/status', (req, res) => {
-  log('Auth status: ' + JSON.stringify({
-    isAuthenticated: req.isAuthenticated(),
-    user: req.user,
-    session: req.session,
-    sessionID: req.sessionID
-  }));
-  res.json({ isAuthenticated: req.isAuthenticated(), user: req.user });
-});
-
-app.get('/api/test-session', (req, res) => {
-  log('Test session endpoint: ' + JSON.stringify({
-    sessionID: req.sessionID,
-    session: req.session
-  }));
-  req.session.test = 'test-value';
-  req.session.save((err) => {
-    if (err) {
-      log('Test session save error: ' + err.message + ' | Stack: ' + err.stack);
-      return res.status(500).json({ error: 'Session save failed' });
-    }
-    log('Test session saved');
-    res.json({ message: 'Session test successful', sessionID: req.sessionID });
-  });
-});
-
-app.get('/api/debug-session', (req, res) => {
-  const sessionId = req.query.sid || req.sessionID;
-  log('Debug session endpoint: ' + sessionId);
-  sessionStore.get(sessionId, (err, sessionData) => {
-    if (err) {
-      log('Debug session error: ' + err.message + ' | Stack: ' + err.stack);
-      return res.status(500).json({ error: 'Session retrieval failed', message: err.message });
-    }
-    log('Debug session data: ' + JSON.stringify(sessionData));
-    res.json({ sessionId, sessionData });
-  });
-});
-
-app.get('/api/force-session', (req, res) => {
-  const sessionId = req.query.sid;
-  if (!sessionId) {
-    return res.status(400).json({ error: 'Session ID required' });
-  }
-  log('Force session endpoint: ' + sessionId);
-  sessionStore.get(sessionId, (err, sessionData) => {
-    if (err) {
-      log('Force session error: ' + err.message + ' | Stack: ' + err.stack);
-      return res.status(500).json({ error: 'Session retrieval failed', message: err.message });
-    }
-    if (!sessionData) {
-      log('Force session: No data found for ' + sessionId);
-      return res.status(404).json({ error: 'Session not found' });
-    }
-    req.session = sessionData; // Override session
-    passport.deserializeUser(sessionData.passport.user, (err, user) => {
-      if (err) {
-        log('Force session deserialize error: ' + err.message + ' | Stack: ' + err.stack);
-        return res.status(500).json({ error: 'Deserialize failed' });
-      }
-      req.user = user;
-      log('Force session user: ' + JSON.stringify(user));
-      res.json({ sessionId, sessionData, user });
-    });
-  });
-});
-
+// Routes
 app.use('/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
+app.use('/api/profile', ensureAuthenticated, profileRoutes);
 
+// Error handler
 app.use((err, req, res, next) => {
-  log('Server error: ' + err.message + ' | Stack: ' + err.stack);
+  log.error('Server error:', err);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+// Start server
 app.listen(port, '0.0.0.0', () => {
-  log(`Aphians Server running on port ${port}`);
+  log.info(`${appName} Server running on port ${port}`);
 }).on('error', (err) => {
-  log('Server startup error: ' + err.message + ' | Stack: ' + err.stack);
+  log.error('Server startup error:', err);
   process.exit(1);
 });
+
+export default app;

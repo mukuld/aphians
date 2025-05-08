@@ -1,16 +1,42 @@
-const mysql = require('mysql2');
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+import path from 'path';
+import log from '../utils/logger.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-const db = mysql.createConnection({
-  host: process.env.DATABASE_HOST,
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME
-});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-db.connect((err) => {
-  if (err) throw err;
-  console.log('MySQL Connected');
-});
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-module.exports = db;
+// Function to initialize the MySQL connection pool
+async function initDatabase() {
+  try {
+    const pool = await mysql.createPool({
+      host: process.env.DATABASE_HOST || 'localhost',
+      user: process.env.DATABASE_USER || 'root',
+      password: process.env.DATABASE_PASSWORD || '',
+      database: process.env.DATABASE_NAME || 'aphians_db',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    });
+
+    // Test the connection
+    const connection = await pool.getConnection();
+    log.info('MySQL Connected: Connection pool initialized');
+    connection.release();
+
+    return pool;
+  } catch (err) {
+    log.error('Error initializing database pool:', err.message, err.stack);
+    throw err;
+  }
+}
+
+// Export the database pool
+const db = await initDatabase();
+
+export default db;
