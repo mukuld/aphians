@@ -3,6 +3,7 @@ import passport from 'passport';
 import db from '../config/db.js'; // Assuming db.js is in ../config/
 import dotenv from 'dotenv';
 import log from '../utils/logger.js'; // Assuming logger.js is in ../utils/
+import { ensureAuthenticated } from '../middleware/authMiddleware.js';
 
 dotenv.config();
 
@@ -119,6 +120,24 @@ router.get('/google/callback',
     }
   }
 );
+
+// GET current authenticated user's status/data
+router.get('/current', ensureAuthenticated, (req, res) => {
+  log.info('[/auth/current] Request for current user status', { userId: req.user?.id });
+  if (req.user) {
+      res.json({
+          isAuthenticated: true,
+          user: {
+              id: req.user.id,
+              displayName: req.user.displayName,
+              email: req.user.email
+          }
+      });
+  } else {
+      log.info('[/auth/current] User not authenticated (req.user is null)');
+      res.status(401).json({ isAuthenticated: false, message: 'Not authenticated' });
+  }
+});
 
 // Logout Route
 router.get('/logout', (req, res, next) => { // Added next for passport v0.6.0 logout

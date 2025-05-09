@@ -1,12 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const ProfileForm = ({ profile, onSave }) => {
-  const [formData, setFormData] = useState(profile || {});
+const ProfileForm = ({ currentUser, onSave }) => {
+  const [formData, setFormData] = useState({});
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Format date to yyyy-MM-dd
+  useEffect(() => {
+    const fetchMyProfile = async () => {
+      if (!currentUser || !currentUser.id) {
+        // If currentuser or its ID is not available, stop loading and indicate error
+        setLoading(false);
+        setError("User not logged in or user ID missing.");
+        console.log("ProfileForm: No current user ID available to fetch profile.");
+        return;
+      }
+
+      try {
+        console.log("ProfileForm: Fetching profile for form population from /aphians/api/profile");
+        //This fetches the logged in user's profile using GET /api/profile endpoint
+        const response = await fetch("/aphians/api/profile", {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json"}  //Include headers for GET
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("ProfileFrom: Profile data fetech for form:", data);
+          setFormData(data); //Populate formData with the fetched data
+        } else {
+          if (response.status === 404) {
+            // If profile not found in case the user is logging in for the first time
+            console.log("ProfileForm: Existing profile not found. Starting with an empty form");
+            setFormData({}); //Keep form empty for new profile creation
+          } else {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch profile for form: ${response.status} ${response.statusText} - ${errorText}`);
+          }
+        }
+      } catch (err) {
+        console.error("ProfileForm: Error fetching profile for form:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false); // Set loading to false after fetch attempt
+      }
+    };
+
+    fetchMyProfile();
+    //Dependency array: Re-run this effect if currentUser changes (e.g after a new login)
+  }, [currentUser]);
+
+  // Helper: Format date to yyyy-MM-dd
   const formatDate = (date) => {
     if (!date) return '';
     const d = new Date(date);
@@ -21,35 +67,100 @@ const ProfileForm = ({ profile, onSave }) => {
     }));
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   const formDataToSend = new FormData();
+  //   Object.keys(formData).forEach((key) => {
+  //     const value = key === 'birthday' ? formatDate(formData[key]) : formData[key];
+  //     formDataToSend.append(key, value);
+  //   });
+  //   try {
+  //     console.log('Sending POST to /aphians/api/profile with FormData');
+  //     const response = await fetch('/aphians/api/profile', {
+  //       method: 'POST',
+  //       body: formDataToSend,
+  //       credentials: 'include'
+  //     });
+  //     if (response.ok) {
+  //       const result = await response.json();
+  //       console.log('Profile saved:', result);
+  //       setError(null);
+  //       onSave(formData);
+  //       navigate('/aphians/community'); // Redirect to CommunityHub
+  //     } else {
+  //       const errorText = await response.text();
+  //       throw new Error(`Failed to save profile: ${response.status} ${response.statusText} - ${errorText}`);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error saving profile:', error);
+  //     setError(error.message);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formDataToSend = new FormData();
+
+    // Append all form data fields
     Object.keys(formData).forEach((key) => {
-      const value = key === 'birthday' ? formatDate(formData[key]) : formData[key];
-      formDataToSend.append(key, value);
+      // Exclude properties that should not be sent directly or are handled by Multer
+      // E.g., user_id is derived from req.user.id on the backend.
+      if (key === 'user_id' || key === 'created_at' || key === 'updated_at') {
+        return;
+      }
+
+      const value = formData[key];
+      if (key === 'birthday') {
+        // Format birthday for submission
+        formDataToSend.append(key, formatDate(value));
+      } else if (key === 'latest_photo' && value instanceof File) {
+        // Append the file directly if it's a File object
+        formDataToSend.append(key, value);
+      } else if (key === 'latest_photo' && typeof value === 'string' && value.startsWith('/aphians/uploads/')) {
+        // If latest_photo is a string (existing URL), don't re-upload unless a new file is selected
+        // You might need a hidden input or specific logic if you want to explicitly clear it.
+        // For now, if it's a URL, we skip appending it unless a new file was chosen.
+      }
+       else if (value !== null && value !== undefined) { // Append other non-null/undefined values
+        formDataToSend.append(key, value);
+      }
     });
+
+
     try {
-      console.log('Sending POST to /aphians/api/profile with FormData');
+      console.log('ProfileForm: Sending POST to /aphians/api/profile with FormData');
       const response = await fetch('/aphians/api/profile', {
         method: 'POST',
-        body: formDataToSend,
+        body: formDataToSend, // FormData does not require 'Content-Type' header
         credentials: 'include'
       });
+
       if (response.ok) {
         const result = await response.json();
-        console.log('Profile saved:', result);
+        console.log('ProfileForm: Profile saved:', result);
         setError(null);
-        onSave(formData);
-        navigate('/aphians/community'); // Redirect to CommunityHub
+        // onSave prop might be used by a parent component for specific actions,
+        // but for a direct form like this, navigation might be sufficient.
+        // onSave(formData); // You might still call this if a parent needs updated formData
+
+        navigate('/aphians/community'); // Redirect to CommunityHub after successful save
       } else {
         const errorText = await response.text();
         throw new Error(`Failed to save profile: ${response.status} ${response.statusText} - ${errorText}`);
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error('ProfileForm: Error saving profile:', error);
       setError(error.message);
     }
   };
+
+  if (loading) {
+    return <div>Loading profile data...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading profile: {error}</div>;
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-4">

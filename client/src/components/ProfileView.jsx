@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-const ProfilePage = ({ currentUser }) => {
+const ProfileView = ({ currentUser }) => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
@@ -124,4 +124,4 @@ const ProfilePage = ({ currentUser }) => {
   );
 };
 
-export default ProfilePage;
+export default ProfileView;

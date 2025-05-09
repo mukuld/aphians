@@ -64,8 +64,46 @@ router.get('/', ensureAuthenticated, async (req, res) => {
   }
 });
 
+// GET all profiles
+router.get('/all', ensureAuthenticated, async (req, res) => {
+  try {
+    log.info('--- [/api/profile/all] Handler Entered ---', {
+      userId: req.user?.id,
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      cookies: req.cookies
+    });
+    if (!req.user?.id || !req.isAuthenticated()) {
+      log.error('[/api/profile/all] Authentication failed', {
+        user: req.user,
+        sessionID: req.sessionID,
+        cookies: req.cookies
+      });
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const [schema] = await db.query('SHOW COLUMNS FROM profiles');
+    log.debug('[/api/profile/all] Profiles table schema:', { schema });
+
+    const [rows] = await db.query(
+      'SELECT user_id, full_name, latest_photo, city FROM profiles WHERE user_id IS NOT NULL AND user_id > 0'
+    );
+    log.info('[/api/profile/all] Profiles fetched successfully:', { count: rows.length, rows });
+    res.json(rows);
+  } catch (err) {
+    log.error('[/api/profile/all] Error:', {
+      message: err.message,
+      stack: err.stack,
+      sessionID: req.sessionID,
+      userId: req.user?.id
+    });
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
 // GET profile by user ID
-router.get(`/{userId}`, ensureAuthenticated, async (req, res) => {
+// router.get(`/{userId}`, ensureAuthenticated, async (req, res) => {
+router.get('/:userId', ensureAuthenticated, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId, 10);
     if (isNaN(userId) || userId <= 0) {
@@ -151,43 +189,6 @@ router.post('/', ensureAuthenticated, upload.single('latest_photo'), async (req,
     res.json({ success: true });
   } catch (err) {
     log.error('POST /profile error:', { message: err.message, stack: err.stack, sessionID: req.sessionID });
-    res.status(500).json({ error: 'Server error', details: err.message });
-  }
-});
-
-// GET all profiles
-router.get('/all', ensureAuthenticated, async (req, res) => {
-  try {
-    log.info('--- [/api/profile/all] Handler Entered ---', {
-      userId: req.user?.id,
-      sessionID: req.sessionID,
-      isAuthenticated: req.isAuthenticated(),
-      cookies: req.cookies
-    });
-    if (!req.user?.id || !req.isAuthenticated()) {
-      log.error('[/api/profile/all] Authentication failed', {
-        user: req.user,
-        sessionID: req.sessionID,
-        cookies: req.cookies
-      });
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const [schema] = await db.query('SHOW COLUMNS FROM profiles');
-    log.debug('[/api/profile/all] Profiles table schema:', { schema });
-
-    const [rows] = await db.query(
-      'SELECT user_id, full_name, latest_photo, city FROM profiles WHERE user_id IS NOT NULL AND user_id > 0'
-    );
-    log.info('[/api/profile/all] Profiles fetched successfully:', { count: rows.length, rows });
-    res.json(rows);
-  } catch (err) {
-    log.error('[/api/profile/all] Error:', {
-      message: err.message,
-      stack: err.stack,
-      sessionID: req.sessionID,
-      userId: req.user?.id
-    });
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 });

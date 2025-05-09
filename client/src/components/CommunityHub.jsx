@@ -6,6 +6,10 @@ const CommunityHub = ({ currentUser }) => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  console.log('CommunityHub: currentUser prop received:', currentUser); // Add this line!
+  console.log('CommunityHub: type of currentUser.id:', typeof currentUser?.id); // Add this line!
+  console.log('CommunityHub: profiles data:', profiles); // Add this line!
+
   useEffect(() => {
     const fetchProfiles = async () => {
       try {
