@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from './Navbar'; // Assuming Navbar is imported here
 
 const CommunityHub = ({ currentUser }) => {
   const [profiles, setProfiles] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  console.log('CommunityHub: currentUser prop received:', currentUser); // Add this line!
-  console.log('CommunityHub: type of currentUser.id:', typeof currentUser?.id); // Add this line!
-  console.log('CommunityHub: profiles data:', profiles); // Add this line!
+  const BASE_URL = process.env.REACT_APP_BASE_URL || 'https://www.dharwadkar.com';
 
   useEffect(() => {
     const fetchProfiles = async () => {
       try {
-        console.log('Fetching profiles from /aphians/api/profile/all');
         const response = await fetch('/aphians/api/profile/all', {
           credentials: 'include'
         });
-        console.log('Response status:', response.status, 'Headers:', response.headers);
         if (response.ok) {
           const data = await response.json();
-          console.log('Profiles fetched:', data);
           setProfiles(data);
         } else {
           throw new Error(`Failed to fetch profiles: ${response.status}`);
@@ -39,52 +34,77 @@ const CommunityHub = ({ currentUser }) => {
       setError('Invalid profile ID');
       return;
     }
-    console.log('Navigating to profile:', userId);
-    navigate(`/aphians/profile/${userId}`);
+    navigate(`/aphians/profile/${userId}`); // Navigate to ProfilePage (view mode)
   };
 
   const handleEditProfile = () => {
-    console.log('Navigating to edit profile');
-    navigate('/aphians/profile');
+    // Navigate to the dedicated ProfileForm component for editing
+    if (currentUser && currentUser.id) {
+      navigate(`/aphians/edit-profile`);
+    } else {
+      setError('User not logged in or profile ID not available for editing.');
+    }
+  };
+
+  const getThumbnailUrl = (photo) => {
+    if (!photo || photo === '[object Object]' || typeof photo !== 'string') {
+      return 'https://via.placeholder.com/100/CCCCCC/FFFFFF?text=User'; // Larger, default placeholder
+    }
+    if (photo.startsWith('/aphians/')) {
+      return `${BASE_URL}${photo}`;
+    }
+    if (photo.startsWith('/Uploads/')) { // Ensure this matches your backend upload path prefix
+      return `${BASE_URL}/aphians${photo.replace('/Uploads/', '/Uploads/')}`; // Corrected potential case issue
+    }
+    return photo;
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <h2 className="text-3xl font-bold mb-6 text-center">Community Hub</h2>
-      {error && <div className="text-red-600 mb-4 text-center">{error}</div>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {profiles.map((profile) => (
-          <div
-            key={profile.user_id}
-            className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-          >
-            <img
-              src={profile.latest_photo || 'https://via.placeholder.com/150'}
-              alt={profile.full_name || 'Unknown'}
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-4">
-              <h3 className="text-xl font-semibold">{profile.full_name || 'Unknown'}</h3>
-              <p className="text-gray-600">{profile.city || 'Unknown City'}</p>
-              <div className="mt-4 flex justify-between">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <Navbar />
+      <div className="max-w-6xl mx-auto p-6 flex-grow">
+        <h2 className="text-4xl font-bold mb-8 text-center text-gray-900">Community Hub</h2>
+        {error && <div className="text-red-600 bg-red-100 border border-red-400 p-3 rounded mb-4 text-center">{error}</div>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          {profiles.map((profile) => (
+            <div
+              key={profile.user_id}
+              className="bg-white shadow-lg rounded-xl hover:shadow-xl transition-shadow duration-300 relative p-6 pt-20 text-left flex flex-col justify-between min-h-[250px] w-[400px] mx-auto"
+            >
+              <div className="absolute top-4 left-4 w-24 h-24">
+                <img
+                  src={getThumbnailUrl(profile.latest_photo)}
+                  alt={profile.full_name || 'Unknown'}
+                  className="w-full h-full object-cover rounded-full border-4 border-white shadow-md"
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/100/CCCCCC/FFFFFF?text=User';
+                  }}
+                />
+              </div>
+              <div className="ml-28 mt-2 flex-grow flex flex-col">
+                <h3 className="text-xl font-semibold text-gray-800 mb-1">{profile.full_name || 'Unknown'}</h3>
+                <p className="text-gray-600 text-sm">{profile.city || 'Unknown City'}</p>
+              </div>
+              <div className="mt-4 flex flex-wrap justify-start gap-2 pl-4">
                 <button
                   onClick={() => handleViewProfile(profile.user_id)}
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200 text-sm"
                 >
                   View Profile
                 </button>
+                {/* The condition for showing the Edit button */}
                 {currentUser && currentUser.id === profile.user_id && (
                   <button
                     onClick={handleEditProfile}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 text-sm"
                   >
-                    Edit Profile
+                    Edit My Profile
                   </button>
                 )}
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

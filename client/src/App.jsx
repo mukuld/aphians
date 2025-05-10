@@ -21,7 +21,7 @@ const App = () => {
             setCurrentUser(data.user);
             console.log('App.jsx: Current user fetched:', data.user); // Log to verify
           } else {
-            setCurrentUser(nul);
+            setCurrentUser(null); // Corrected: `nul` to `null`
             console.log("App.jsx: No active session found or user not authenticated.");
           }
         } else {
@@ -39,10 +39,20 @@ const App = () => {
   return (
     <Router>
       <Routes>
+        {/* Landing page (e.g., for login/registration) */}
         <Route path="/aphians" element={<LandingPage />} />
-        <Route path="/aphians/community" element={<CommunityHub currentUser={currentUser} />} />
-        <Route path="/aphians/profile" element={<ProfileForm currentUser={currentUser} />} />
+
+        {/* Route for viewing any profile by ID */}
         <Route path="/aphians/profile/:userId" element={<ProfilePage currentUser={currentUser} />} />
+
+        {/* Route for editing the current user's profile */}
+        {/* Changed from "/aphians/profile" to "/aphians/edit-profile" */}
+        <Route path="/aphians/edit-profile" element={<ProfileForm currentUser={currentUser} />} />
+
+        {/* Route for the main community hub */}
+        <Route path="/aphians/community" element={<CommunityHub currentUser={currentUser} />} />
+
+        {/* Fallback for any unmatched routes - redirects to the landing page */}
         <Route path="*" element={<Navigate to="/aphians" />} />
       </Routes>
     </Router>

@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Use .env for upload directory
-const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads/';
+const UPLOAD_DIR = process.env.UPLOAD_DIR || 'Uploads/';
 
 // Ensure Uploads directory exists
 const uploadDirPath = path.join(__dirname, '../../', UPLOAD_DIR);
@@ -102,7 +102,6 @@ router.get('/all', ensureAuthenticated, async (req, res) => {
 });
 
 // GET profile by user ID
-// router.get(`/{userId}`, ensureAuthenticated, async (req, res) => {
 router.get('/:userId', ensureAuthenticated, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId, 10);
@@ -123,7 +122,7 @@ router.get('/:userId', ensureAuthenticated, async (req, res) => {
     log.info('Profile fetched successfully:', { userId });
     res.json(rows[0]);
   } catch (err) {
-    log.error(`GET /profile/${userId} error:`, {
+    log.error(`GET /profile/${req.params.userId} error:`, {
       message: err.message,
       stack: err.stack,
       rawUserId: req.params.userId,
@@ -138,34 +137,83 @@ router.post('/', ensureAuthenticated, upload.single('latest_photo'), async (req,
   try {
     const userId = req.user.id;
     log.debug('Creating/updating profile for user:', { userId, sessionID: req.sessionID });
+
     const {
-      full_name, street_address, city, state, zip, country, phone_number, email_id,
-      birthday, current_occupation, company_name, job_role,
-      social_media_1, social_media_2, social_media_3,
-      spouse_name, child_1_name, child_2_name, child_3_name,
-      child_1_age, child_2_age, child_3_age,
+      full_name,
+      street_address,
+      city,
+      state,
+      zip,
+      country,
+      phone_country_code,
+      phone_number,
+      email_id,
+      birthday,
+      marriage_anniversary,
+      current_occupation,
+      company_name,
+      job_role,
+      social_media_1,
+      social_media_2,
+      social_media_3,
+      spouse_name,
+      child_1_name,
+      child_2_name,
+      child_3_name,
+      child_1_age,
+      child_2_age,
+      child_3_age,
       special_message
     } = req.body;
 
-    const latest_photo = req.file ? `/aphians/${UPLOAD_DIR}${req.file.filename}` : null;
-    log.debug('Profile image saved:', {
-      latest_photo,
-      file: req.file ? { filename: req.file.filename, path: req.file.path } : null
-    });
+    let latest_photo = null;
+
+    // Check if a new file was uploaded
+    if (req.file) {
+      latest_photo = `/aphians/${UPLOAD_DIR}${req.file.filename}`;
+      log.debug('New profile image uploaded:', {
+        latest_photo,
+        file: { filename: req.file.filename, path: req.file.path }
+      });
+    } else {
+      // If no new file, retrieve the existing photo path from the database
+      const [existingProfile] = await db.query('SELECT latest_photo FROM profiles WHERE user_id = ?', [userId]);
+      if (existingProfile.length > 0 && existingProfile[0].latest_photo) {
+        latest_photo = existingProfile[0].latest_photo;
+        log.debug('Retaining existing profile photo:', { latest_photo });
+      } else {
+        // If it's a new profile or existing profile without a photo, and no new photo uploaded, require it.
+        // This condition means no photo exists and no new photo is provided for a new profile.
+        if (!full_name || !street_address || !city || !country || !phone_number || !email_id || !birthday) {
+             log.error('Missing mandatory fields for new profile creation, including photo', { body: req.body });
+             return res.status(400).json({ error: 'Missing mandatory fields, including profile photo for new profile.' });
+        }
+         log.warn('No new photo uploaded, and no existing photo found. Profile will be saved without a photo.', { userId });
+      }
+    }
+
+    // Validate mandatory fields (excluding photo if it's an update without new photo)
+    if (!full_name || !street_address || !city || !country || !phone_number || !email_id || !birthday) {
+      log.error('Missing mandatory text fields for profile update', { body: req.body });
+      return res.status(400).json({ error: 'Missing mandatory text fields' });
+    }
 
     const formattedBirthday = formatDate(birthday);
+    const formattedAnniversary = formatDate(marriage_anniversary);
 
     const profileData = {
       user_id: userId,
-      full_name: full_name || null,
-      street_address: street_address || null,
-      city: city || null,
+      full_name,
+      street_address,
+      city,
       state: state || null,
       zip: zip || null,
-      country: country || null,
-      phone_number: phone_number || null,
-      email_id: email_id || null,
+      country,
+      phone_country_code: phone_country_code || null,
+      phone_number,
+      email_id,
       birthday: formattedBirthday,
+      marriage_anniversary: formattedAnniversary,
       current_occupation: current_occupation || null,
       company_name: company_name || null,
       job_role: job_role || null,
@@ -180,13 +228,16 @@ router.post('/', ensureAuthenticated, upload.single('latest_photo'), async (req,
       child_2_age: child_2_age ? parseInt(child_2_age, 10) : null,
       child_3_age: child_3_age ? parseInt(child_3_age, 10) : null,
       special_message: special_message || null,
-      latest_photo
+      latest_photo // This will be either the new photo path or the retained old one
     };
 
     const query = 'INSERT INTO profiles SET ? ON DUPLICATE KEY UPDATE ?';
     await db.query(query, [profileData, profileData]);
     log.info('Profile created/updated successfully:', { userId, latest_photo });
-    res.json({ success: true });
+
+    // Fetch the updated profile to return
+    const [rows] = await db.query('SELECT * FROM profiles WHERE user_id = ?', [userId]);
+    res.json(rows[0]);
   } catch (err) {
     log.error('POST /profile error:', { message: err.message, stack: err.stack, sessionID: req.sessionID });
     res.status(500).json({ error: 'Server error', details: err.message });
