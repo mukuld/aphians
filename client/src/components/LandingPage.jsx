@@ -1,6 +1,6 @@
 import React from 'react';
 // import NavBar from "./Navbar";
-import googleLogo from "../assets/google-logo-g-rounded.png";
+import googleLogo from "../assets/google-logo-signin-sq.png";
 import facebookLogo from "../assets/facebook-logo-f.png";
 
 const LandingPage = ({ currentUser }) => (
@@ -14,15 +14,15 @@ const LandingPage = ({ currentUser }) => (
           and stay connected with your classmates.
         </p>
         <div className="flex flex-col items-center space-y-4">
-          <span className="text-lg font-medium text-gray-700">Sign in with</span>
+          {/* <span className="text-lg font-medium text-gray-700">Sign in with</span> */}
           <div className="flex space-x-4">
             <a
               href="/aphians/auth/google"
-              className="flex items-center justify-center rounded-full h-12 w-12 transition ease-in-out duration-300">
+              className="flex items-center justify-center rounded-full transition ease-in-out duration-300">
               <img
                 src={googleLogo} // Update with your local path
                 alt="Google Logo"
-                className="h-8 w-8"
+                // className="h-8 w-8"
               />
             </a>
             {/* <a

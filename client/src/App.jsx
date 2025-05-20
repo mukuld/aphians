@@ -25,6 +25,9 @@ import React, { useState, useEffect } from 'react';
    import ProfilePage from './components/ProfilePage';
    import CommunityHub from './components/CommunityHub';
    import Footer from './components/Footer';
+   import PrivacyPolicy from './components/legal/PrivacyPolicy';
+   import TermsOfUse from './components/legal/TermsOfUse';
+   import DataDeletion from './components/legal/DataDeletion';
 
    const App = () => {
      const [currentUser, setCurrentUser] = useState(null);
@@ -66,6 +69,9 @@ import React, { useState, useEffect } from 'react';
              <Route path="/aphians/profile/:userId" element={<ProfilePage currentUser={currentUser} />} />
              <Route path="/aphians/edit-profile" element={<ProfileForm currentUser={currentUser} />} />
              <Route path="/aphians/community" element={<CommunityHub currentUser={currentUser} />} />
+             <Route path="/aphians/privacy-policy" element={<PrivacyPolicy />} />
+             <Route path="/aphians/terms-of-use" element={<TermsOfUse />} />
+             <Route path="/aphians/data-deletion-instructions" element={<DataDeletion />} /> 
              <Route path="*" element={<Navigate to="/aphians" />} />
            </Routes>
          </main>

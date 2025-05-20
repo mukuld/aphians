@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import schoolLogo from "../assets/sb-10f-logo.jpg";
+// import schoolLogo from "../assets/sb-10f-logonogb.png";
+import schoolLogo from "../assets/sb-10f-logonobg.png";
 
 // const Navbar = ({ currentUser }) => (
 //   <nav className="bg-blue-300 text-grey-900 p-4">
