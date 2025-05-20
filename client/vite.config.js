@@ -1,19 +1,13 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+// https://vite.dev/config/
 export default defineConfig({
-  base: '/aphians',
-  plugins: [react()],
-  css: { // Add this css block
-    postcss: {
-      plugins: [
-        tailwindcss(),
-        require('@tailwindcss/postcss'), // Use require here
-        require('autoprefixer'),         // Use require here
-      ],
-    },
-  },
+  plugins: [
+    tailwindcss(),
+    react()
+  ],
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -36,4 +30,4 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false
   }
-});
+})

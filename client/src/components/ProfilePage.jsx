@@ -85,7 +85,7 @@ const ProfilePage = ({ currentUser }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col">
+      <div className="bg-white flex flex-col">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <div className="text-red-600 text-center p-4">{error}</div>
@@ -108,9 +108,9 @@ const ProfilePage = ({ currentUser }) => {
   const isOwnProfile = currentUser && parseInt(userId, 10) === currentUser.id;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Navbar />
-      <div className="flex-grow flex items-center justify-center p-4">
+    <div className="bg-gray-100 items-center flex flex-col">
+      {/* <Navbar /> */}
+      <div className="p-4">
         <div className="max-w-5xl w-full bg-white rounded-lg shadow-xl p-8 my-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-4xl font-extrabold text-gray-900">Profile</h2>
@@ -201,7 +201,7 @@ const ProfileView = ({ profile, getImageUrl, isOwnProfile, handleEditMyProfile, 
 
     return (
         <div>
-            <div className="flex flex-col items-center md:flex-row md:items-start md:space-x-8 mb-8">
+            <div className="flex-grow flex flex-col items-center md:flex-row md:items-start md:space-x-8 mb-8">
                 <div className="w-48 h-48 flex-shrink-0 mb-6 md:mb-0">
                     <img
                         src={getImageUrl(profile.latest_photo)}

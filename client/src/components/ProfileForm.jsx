@@ -18,10 +18,14 @@ const ProfileForm = ({ currentUser, onSave }) => {
     const fetchMyProfile = async () => {
       if (!currentUser || !currentUser.id) {
         setLoading(false);
+        // Keep this error for the case where currentUser is missing - this is a true error state
         setError("User not logged in or user ID missing.");
         console.log("ProfileForm: No current user ID available to fetch profile.");
         return;
       }
+
+      setLoading(true); // Set loading true before fetching
+      setError(null); // Clear previous errors before a new fetch attempt
 
       try {
         console.log("ProfileForm: Fetching profile for form population from /aphians/api/profile");
@@ -41,8 +45,7 @@ const ProfileForm = ({ currentUser, onSave }) => {
             city: data.city || '',
             state: data.state || '',
             zip: data.zip || '',
-            // Crucial change for country: Use the exact country name from fetched data
-            country: data.country || '', // Default to empty string if no country
+            country: data.country || '',
             phone_country_code: data.phone_country_code || '',
             phone_number: data.phone_number || '',
             email_id: data.email_id || '',
@@ -58,16 +61,18 @@ const ProfileForm = ({ currentUser, onSave }) => {
             child_1_name: data.child_1_name || '',
             child_2_name: data.child_2_name || '',
             child_3_name: data.child_3_name || '',
-            child_1_age: data.child_1_age || '',
-            child_2_age: data.child_2_age || '',
-            child_3_age: data.child_3_age || '',
+            child_1_age: data.child_1_age || '', // Initialize age fields as empty strings
+            child_2_age: data.child_2_age || '', // Initialize age fields as empty strings
+            child_3_age: data.child_3_age || '', // Initialize age fields as empty strings
             special_message: data.special_message || '',
             latest_photo_url: data.latest_photo || null,
             latest_photo: null,
           });
         } else {
+          // Handle non-OK responses
           if (response.status === 404) {
             console.log("ProfileForm: Existing profile not found. Starting with an empty form");
+            // Set formData to empty state for a new profile
             setFormData({
               full_name: '', street_address: '', city: '', state: '', zip: '',
               country: 'United States', // Set default for new profiles if desired
@@ -78,29 +83,35 @@ const ProfileForm = ({ currentUser, onSave }) => {
               child_2_age: '', child_3_age: '', special_message: '', latest_photo: null,
               latest_photo_url: null
             });
+            // *** IMPORTANT CHANGE: DO NOT set error here for 404 ***
           } else {
+            // Handle other non-OK status codes as actual errors
             const errorText = await response.text();
-            throw new Error(`Failed to fetch profile for form: ${response.status} ${response.statusText} - ${errorText}`);
+            const errorMessage = `Failed to fetch profile for form: ${response.status} ${response.statusText} - ${errorText}`;
+            console.error("ProfileForm: Server error fetching profile:", errorMessage);
+            setError(errorMessage); // Set error for other server errors
           }
         }
       } catch (err) {
-        console.error("ProfileForm: Error fetching profile for form:", err);
-        setError(err.message);
+        // This catch block now primarily handles network errors or errors thrown explicitly
+        console.error("ProfileForm: Network or unexpected error fetching profile:", err);
+        const errorMessage = `Error fetching profile: ${err.message}`;
+        setError(errorMessage); // Set error for network/unexpected issues
       } finally {
         setLoading(false);
       }
     };
 
     fetchMyProfile();
-  }, [currentUser]);
+  }, [currentUser]); // Dependency array includes currentUser
 
   // Helper: Format date to YYYY-MM-dd
   const formatDate = (date) => {
     if (!date) return '';
     const d = new Date(date);
     if (isNaN(d.getTime())) {
-        console.warn("Invalid date provided to formatDate:", date);
-        return '';
+      console.warn("Invalid date provided to formatDate:", date);
+      return '';
     }
     return d.toISOString().split('T')[0]; // Returns YYYY-MM-dd
   };
@@ -116,31 +127,36 @@ const ProfileForm = ({ currentUser, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setError(null); // Clear errors on new submission attempt
 
     const formDataToSend = new FormData();
 
     Object.keys(formData).forEach((key) => {
       const value = formData[key];
 
+      // Skip keys not meant for submission or handled separately
       if (key === 'user_id' || key === 'created_at' || key === 'updated_at' || key === 'latest_photo_url') {
         return;
       }
 
       if (key === 'birthday' || key === 'marriage_anniversary') {
+        // Format dates before appending
         formDataToSend.append(key, formatDate(value));
       } else if (key === 'latest_photo' && value instanceof File) {
+        // Append file if it's a File object
         formDataToSend.append(key, value);
       } else if (value !== null && value !== undefined && value !== '') {
+        // Append other fields if they have a value
         formDataToSend.append(key, value);
       }
+      // Do not append empty strings or nulls for optional fields, backend should handle nulls for columns
     });
 
     try {
       console.log('ProfileForm: Sending POST to /aphians/api/profile with FormData');
       const response = await fetch('/aphians/api/profile', {
         method: 'POST',
-        body: formDataToSend,
+        body: formDataToSend, // FormData sets the Content-Type header automatically to multipart/form-data
         credentials: 'include'
       });
 
@@ -148,24 +164,33 @@ const ProfileForm = ({ currentUser, onSave }) => {
         const result = await response.json();
         console.log('ProfileForm: Profile saved:', result);
         if (onSave) onSave(result);
+        // Redirect after successful save (e.g., to community hub)
         navigate('/aphians/community');
       } else {
         const errorText = await response.text();
-        throw new Error(`Failed to save profile: ${response.status} ${response.statusText} - ${errorText}`);
+        const errorMessage = `Failed to save profile: ${response.status} ${response.statusText} - ${errorText}`;
+        console.error('ProfileForm: Server error saving profile:', errorMessage);
+        setError(errorMessage); // Set error for server save issues
       }
     } catch (error) {
       console.error('ProfileForm: Error saving profile:', error);
-      setError(error.message);
+      const errorMessage = `Error saving profile: ${error.message}`;
+      setError(errorMessage); // Set error for network or unexpected save issues
     }
   };
 
+
   const handleCancel = () => {
+    // Redirect on cancel, maybe back to the landing page or community if appropriate
+    // For a new user who needs profile setup, maybe redirect to landing or show a message?
+    // For now, redirecting to community might not be ideal if profile is mandatory.
+    // Consider user flow here. Redirecting to community assumes they can access it without a profile.
     navigate('/aphians/community');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col">
+      <div className="bg-white flex flex-col">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center p-4">Loading profile data...</div>
@@ -174,28 +199,21 @@ const ProfileForm = ({ currentUser, onSave }) => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex flex-col">
-        <Navbar />
-        <div className="flex-grow flex items-center justify-center">
-          <div className="text-red-600 text-center p-4">Error loading profile: {error}</div>
-        </div>
-      </div>
-    );
-  }
-
+  // Render the form if not loading and no critical error occurred
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Navbar />
+    <div className="bg-gray-100 flex flex-col">
+      {/* <Navbar /> */}
       <div className="flex-grow flex items-center justify-center p-4">
         <div className="max-w-5xl w-full bg-white rounded-lg shadow-xl p-8 my-8">
-          <h2 className="text-4xl font-extrabold text-gray-900 mb-8">Your Profile</h2>
+          {/* Display the general error message block at the top if an error occurred */}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+              <strong className="font-bold">Error!</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+          )}
 
-          {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-            <strong className="font-bold">Error!</strong>
-            <span className="block sm:inline"> {error}</span>
-          </div>}
+          <h2 className="text-4xl font-extrabold text-gray-900 mb-8">Your Profile</h2>
 
           <form onSubmit={handleSubmit} className="space-y-8 p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -280,7 +298,6 @@ const ProfileForm = ({ currentUser, onSave }) => {
                     <label htmlFor="country" className="block text-sm font-medium text-gray-700">
                       Country <span className="text-red-500">*</span>
                     </label>
-                    {/* Changed from input with datalist to select dropdown */}
                     <select
                       id="country"
                       name="country"
@@ -626,10 +643,10 @@ const ProfileForm = ({ currentUser, onSave }) => {
                         className="mt-1 block w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                       />
                       {formData.latest_photo_url && (
-                          <div className="mt-2 flex items-center space-x-2">
-                              <img src={formData.latest_photo_url} alt="Current Profile" className="w-16 h-16 object-cover rounded-full border border-gray-300" />
-                              <span className="text-sm text-gray-500">Current photo uploaded. Upload new to change.</span>
-                          </div>
+                        <div className="mt-2 flex items-center space-x-2">
+                          <img src={formData.latest_photo_url} alt="Current Profile" className="w-16 h-16 object-cover rounded-full border border-gray-300" />
+                          <span className="text-sm text-gray-500">Current photo uploaded. Upload new to change.</span>
+                        </div>
                       )}
                     </div>
                   </div>

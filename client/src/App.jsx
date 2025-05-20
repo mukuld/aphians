@@ -1,72 +1,30 @@
-// import React, { useState, useEffect } from 'react';
-// import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-// import LandingPage from './components/LandingPage';
-// import ProfileForm from './components/ProfileForm';
-// import ProfilePage from "./components/ProfilePage";
-// import CommunityHub from './components/CommunityHub';
+// import { useState } from 'react'
 
-
-// const App = () => {
-//   const [currentUser, setCurrentUser] = useState(null);
-
-//   useEffect(() => {
-//     const fetchCurrentUser = async () => {
-//       try {
-//         const response = await fetch('/aphians/api/auth/current', {
-//           credentials: 'include'
-//         });
-//         if (response.ok) {
-//           const data = await response.json();
-//           if (data.isAuthenticated) {
-//             setCurrentUser(data.user);
-//             console.log('App.jsx: Current user fetched:', data.user); // Log to verify
-//           } else {
-//             setCurrentUser(null); // Corrected: `nul` to `null`
-//             console.log("App.jsx: No active session found or user not authenticated.");
-//           }
-//         } else {
-//           console.log("App.jsx: Failed to fetch current user or no active session found (response not ok):", response.status);
-//           setCurrentUser(null); // Ensure currentUser is null if fetch fails or isn't authenticated
-//         }
-//       } catch (err) {
-//         console.error('Error fetching current user:', err);
-//         setCurrentUser(null); // Ensure currentUser is null on network/parsing error
-//       }
-//     };
-//     fetchCurrentUser();
-//   }, []);
+// function App() {
+//   const [count, setCount] = useState(0)
 
 //   return (
-//     <Router>
-//       <Routes>
-//         {/* Landing page (e.g., for login/registration) */}
-//         <Route path="/aphians" element={<LandingPage />} />
+//     <>
+//       <div className='bg-red-500'>
+//         <h1>Hello There</h1>
+//       </div>
+//       <p className="mx-auto bg-blue-400">
+//         Click on the Vite and React logos to learn more
+//       </p>
+//     </>
+//   )
+// }
 
-//         {/* Route for viewing any profile by ID */}
-//         <Route path="/aphians/profile/:userId" element={<ProfilePage currentUser={currentUser} />} />
-
-//         {/* Route for editing the current user's profile */}
-//         {/* Changed from "/aphians/profile" to "/aphians/edit-profile" */}
-//         <Route path="/aphians/edit-profile" element={<ProfileForm currentUser={currentUser} />} />
-
-//         {/* Route for the main community hub */}
-//         <Route path="/aphians/community" element={<CommunityHub currentUser={currentUser} />} />
-
-//         {/* Fallback for any unmatched routes - redirects to the landing page */}
-//         <Route path="*" element={<Navigate to="/aphians" />} />
-//       </Routes>
-//     </Router>
-//   );
-// };
-
-// export default App;
+// export default App
 
 import React, { useState, useEffect } from 'react';
    import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+   import Navbar from './components/Navbar';
    import LandingPage from './components/LandingPage';
    import ProfileForm from './components/ProfileForm';
    import ProfilePage from './components/ProfilePage';
    import CommunityHub from './components/CommunityHub';
+   import Footer from './components/Footer';
 
    const App = () => {
      const [currentUser, setCurrentUser] = useState(null);
@@ -99,15 +57,19 @@ import React, { useState, useEffect } from 'react';
      }, []);
 
      return (
-       <div className="min-h-screen text-blue-500">
+       <div className="flex flex-col bg-white h-full">
          <Router>
+         <Navbar currentUser={currentUser} />
+         <main className="flex-grow">
            <Routes>
-             <Route path="/aphians" element={<LandingPage />} />
+             <Route path="/aphians" element={<LandingPage currentUser={currentUser}/>} />
              <Route path="/aphians/profile/:userId" element={<ProfilePage currentUser={currentUser} />} />
              <Route path="/aphians/edit-profile" element={<ProfileForm currentUser={currentUser} />} />
              <Route path="/aphians/community" element={<CommunityHub currentUser={currentUser} />} />
              <Route path="*" element={<Navigate to="/aphians" />} />
            </Routes>
+         </main>
+           <Footer />
          </Router>
        </div>
      );

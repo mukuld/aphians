@@ -60,16 +60,16 @@ const CommunityHub = ({ currentUser }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Navbar />
+    <div className="bg-gray-100 flex flex-col">
+      {/* <Navbar /> */}
       <div className="max-w-6xl mx-auto p-6 flex-grow">
-        <h2 className="text-4xl font-bold mb-8 text-center text-gray-900">Community Hub</h2>
+        <h2 className="bg-gray-100 text-4xl font-bold mb-8 text-center text-gray-900">Community Hub</h2>
         {error && <div className="text-red-600 bg-red-100 border border-red-400 p-3 rounded mb-4 text-center">{error}</div>}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {profiles.map((profile) => (
             <div
               key={profile.user_id}
-              className="bg-white shadow-lg rounded-xl hover:shadow-xl transition-shadow duration-300 relative p-6 pt-20 text-left flex flex-col justify-between min-h-[250px] w-[400px] mx-auto"
+              className="bg-white shadow-lg rounded-xl hover:shadow-xl transition-shadow duration-300 relative p-6 pt-20 text-left flex flex-col justify-between min-h-[250px]"
             >
               <div className="absolute top-4 left-4 w-24 h-24">
                 <img

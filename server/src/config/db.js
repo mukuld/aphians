@@ -20,7 +20,8 @@ async function initDatabase() {
       password: process.env.DATABASE_PASSWORD || '',
       database: process.env.DATABASE_NAME || 'aphians_db',
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 20,
+      acquireTimeout: 30000,
       queueLimit: 0
     });
 

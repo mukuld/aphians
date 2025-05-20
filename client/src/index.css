@@ -1,4 +1,41 @@
 @import "tailwindcss";
-/* @tailwind base;
-    @tailwind components;
-    @tailwind utilities; */
+
+/* body {
+  @apply bg-white text-gray-900;
+}
+
+.btn-primary {
+  @apply bg-orange-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-teal-500 hover:text-gray-900 transition ease-in-out duration-300;
+}
+
+.btn-secondary {
+  @apply bg-teal-500 text-white font-semibold px-4 py-2 rounded-md hover:bg-red-200 hover:text-gray-900 transition ease-in-out duration-300;
+}
+
+.link {
+  @apply text-teal-500 hover:text-red-200;
+} */
+
+/* Scheme: Earthy and Welcoming */
+
+body {
+  @apply bg-stone-300 text-gray-900;
+}
+
+.btn-primary {
+  @apply bg-teal-500 text-white font-semibold px-4 py-2 rounded-md hover:bg-orange-600 hover:text-white transition ease-in-out duration-300;
+}
+
+.btn-secondary {
+  @apply bg-orange-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-yellow-700 hover:text-white transition ease-in-out duration-300;
+}
+
+.link {
+  @apply text-blue-500 hover:text-red-200;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
