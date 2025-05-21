@@ -1,24 +1,6 @@
-// import { useState } from 'react'
-
-// function App() {
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <>
-//       <div className='bg-red-500'>
-//         <h1>Hello There</h1>
-//       </div>
-//       <p className="mx-auto bg-blue-400">
-//         Click on the Vite and React logos to learn more
-//       </p>
-//     </>
-//   )
-// }
-
-// export default App
-
 import React, { useState, useEffect } from 'react';
-   import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+   import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+   import ReactGA from "react-ga4";
    import Navbar from './components/Navbar';
    import LandingPage from './components/LandingPage';
    import ProfileForm from './components/ProfileForm';
@@ -28,6 +10,16 @@ import React, { useState, useEffect } from 'react';
    import PrivacyPolicy from './components/legal/PrivacyPolicy';
    import TermsOfUse from './components/legal/TermsOfUse';
    import DataDeletion from './components/legal/DataDeletion';
+
+   const TrackPageViews = () => {
+    const location = useLocation();
+    
+    useEffect(() => {
+    ReactGA.send({ hitType: "pageview", page: location.pathname });
+  }, [location]);
+
+  return null;
+  };
 
    const App = () => {
      const [currentUser, setCurrentUser] = useState(null);
@@ -63,6 +55,7 @@ import React, { useState, useEffect } from 'react';
        <div className="flex flex-col bg-white h-full">
          <Router>
          <Navbar currentUser={currentUser} />
+         <TrackPageViews />
          <main className="flex-grow">
            <Routes>
              <Route path="/aphians" element={<LandingPage currentUser={currentUser}/>} />
