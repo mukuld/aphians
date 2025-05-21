@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Navbar from './Navbar';
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
+// import Navbar from './Navbar';
 
 const ProfilePage = ({ currentUser }) => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const BASE_URL = process.env.REACT_APP_BASE_URL || 'https://www.dharwadkar.com';
 
   // Helper to format ISO date strings to MM/DD/YYYY
@@ -82,11 +85,15 @@ const ProfilePage = ({ currentUser }) => {
     }
   };
 
+  const handleImageClick = () => {
+    setIsLightboxOpen(true);
+  }
+
 
   if (error) {
     return (
       <div className="bg-white flex flex-col">
-        <Navbar />
+        {/* <Navbar /> */}
         <div className="flex-grow flex items-center justify-center">
           <div className="text-red-600 text-center p-4">{error}</div>
         </div>
@@ -97,7 +104,7 @@ const ProfilePage = ({ currentUser }) => {
   if (!profile) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col">
-        <Navbar />
+        {/* <Navbar /> */}
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center p-4">Loading...</div>
         </div>
@@ -128,7 +135,21 @@ const ProfilePage = ({ currentUser }) => {
             isOwnProfile={isOwnProfile} // Pass this to conditionally show "Edit My Profile" button
             handleEditMyProfile={handleEditMyProfile} // Pass the handler
             formatDateForDisplay={formatDateForDisplay}
+            handleImageClick={handleImageClick}
           />
+          {isLightboxOpen && profile.latest_photo && (
+            <Lightbox
+            open={isLightboxOpen}
+            close={() => setIsLightboxOpen(false)}
+            slides={[{ src: getImageUrl(profile.latest_photo)}]}
+            carousel={{
+            finite: true, // Prevents wrapping around, making it clear there's only one slide
+            preload: 0,   // Crucial: Only preload the current slide (0 means 2*0+1 = 1 slide)
+            spacing: "0px", // Optional: Remove spacing between non-existent other slides
+            padding: "0px", // Optional: Remove padding
+          }}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -136,7 +157,7 @@ const ProfilePage = ({ currentUser }) => {
 };
 
 // ProfileView is an internal helper component for ProfilePage
-const ProfileView = ({ profile, getImageUrl, isOwnProfile, handleEditMyProfile, formatDateForDisplay }) => {
+const ProfileView = ({ profile, getImageUrl, isOwnProfile, handleEditMyProfile, formatDateForDisplay, handleImageClick }) => {
     // Grouping data for better rendering
     const personalInfo = [
         { label: "Full Name", value: profile.full_name },
@@ -206,11 +227,12 @@ const ProfileView = ({ profile, getImageUrl, isOwnProfile, handleEditMyProfile, 
                     <img
                         src={getImageUrl(profile.latest_photo)}
                         alt={profile.full_name || 'Unknown'}
-                        className="w-full h-full object-cover rounded-full border-4 border-blue-400 shadow-md"
+                        className="w-full h-full object-cover rounded-full border-4 border-blue-400 shadow-md cursor-pointer"
                         onError={(e) => {
                             console.error('Failed to load image:', profile.latest_photo);
                             e.target.src = 'https://via.placeholder.com/200/CCCCCC/FFFFFF?text=No+Image';
                         }}
+                        onClick={handleImageClick}
                     />
                 </div>
                 <div className="text-center md:text-left flex-grow">

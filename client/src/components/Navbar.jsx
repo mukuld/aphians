@@ -48,7 +48,7 @@ return (
         {/* Conditional Logout Button */}
         {/* The logout button only appears if currentUser exists and is authenticated */}
         {currentUser && !isLandingPage && (
-          <a href="/aphians/auth/logout" className='link'><button
+          <a href="/aphians/auth/logout" className='link cursor-pointer'><button
             className="bg-orange-400 text-white px-4 py-2 rounded-md hover:bg-ora-600 transition duration-200"
           >
             Logout

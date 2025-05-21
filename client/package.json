@@ -26,6 +26,7 @@
     "globals": "^16.0.0",
     "react-ga4": "^2.1.0",
     "tailwindcss": "^4.1.7",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "yet-another-react-lightbox": "^3.23.2"
   }
 }

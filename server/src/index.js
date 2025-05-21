@@ -2,12 +2,12 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path, { resolve } from 'path';
 import cors from 'cors';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 import passport from './auth/passport.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import { sessionMiddleware, sessionStore } from './middleware/sessionMiddleware.js';
-import { ensureAuthenticated } from './middleware/authMiddleware.js';
+// import { ensureAuthenticated } from './middleware/authMiddleware.js';
 import log from './utils/logger.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -24,8 +24,8 @@ const uploadDir = resolve(__dirname, '..', process.env.UPLOAD_DIR || 'Uploads');
 log.debug('Resolved upload directory:', uploadDir);
 
 // Initialize server values
-const bootId = uuidv4();
-const pid = process.pid;
+// const bootId = uuidv4();
+// const pid = process.pid;
 const port = process.env.PORT || 5000;
 const appName = process.env.APP_NAME || 'Aphians';
 const domain = process.env.DOMAIN || 'dharwadkar.com';
@@ -33,11 +33,11 @@ const sessionCookieName = process.env.SESSION_COOKIE_NAME || 'connect.sid';
 const originUrl = `https://www.${domain}`;
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  log.debug(`Boot ID: ${bootId}`);
-  log.debug(`App Name: ${appName}`);
-  log.debug('SESSION_SECRET: ' + (process.env.SESSION_SECRET ? 'Set' : 'Not set'));
-  log.debug('Runtime __dirname: ' + __dirname);
-  log.debug('Expected .env path: ' + path.resolve(__dirname, '../.env'));
+  // log.debug(`Boot ID: ${bootId}`);
+  // log.debug(`App Name: ${appName}`);
+  // log.debug('SESSION_SECRET: ' + (process.env.SESSION_SECRET ? 'Set' : 'Not set'));
+  // log.debug('Runtime __dirname: ' + __dirname);
+  // log.debug('Expected .env path: ' + path.resolve(__dirname, '../.env'));
 
   if (!process.env.SESSION_SECRET) {
     log.error('Error: SESSION_SECRET is not set in .env');
@@ -50,37 +50,37 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   // Session store test
-  log.info('Testing session store...');
-  const testSessionId = `test-session-${Date.now()}`;
-  await new Promise((resolve, reject) => {
-    sessionStore.set(testSessionId, {
-      cookie: { maxAge: 24 * 60 * 60 * 1000 },
-      data: { test: 'test-data' }
-    }, (err) => {
-      if (err) {
-        log.error('Session store write error:', err);
-        reject(err);
-      } else {
-        log.info('Session store write successful');
-        sessionStore.get(testSessionId, (err, session) => {
-          if (err) {
-            log.error('Session store read error:', err);
-            reject(err);
-          } else {
-            log.info(`Session read: ${JSON.stringify(session)}`);
-            sessionStore.destroy(testSessionId, (err) => {
-              if (err) log.error('Session destroy error:', err);
-              log.info('Test session destroyed');
-              resolve();
-            });
-          }
-        });
-      }
-    });
-  }).catch((err) => {
-    log.error('Session store test failed:', err);
-    process.exit(1);
-  });
+  // log.info('Testing session store...');
+  // const testSessionId = `test-session-${Date.now()}`;
+  // await new Promise((resolve, reject) => {
+  //   sessionStore.set(testSessionId, {
+  //     cookie: { maxAge: 24 * 60 * 60 * 1000 },
+  //     data: { test: 'test-data' }
+  //   }, (err) => {
+  //     if (err) {
+  //       log.error('Session store write error:', err);
+  //       reject(err);
+  //     } else {
+  //       log.info('Session store write successful');
+  //       sessionStore.get(testSessionId, (err, session) => {
+  //         if (err) {
+  //           log.error('Session store read error:', err);
+  //           reject(err);
+  //         } else {
+  //           log.info(`Session read: ${JSON.stringify(session)}`);
+  //           sessionStore.destroy(testSessionId, (err) => {
+  //             if (err) log.error('Session destroy error:', err);
+  //             log.info('Test session destroyed');
+  //             resolve();
+  //           });
+  //         }
+  //       });
+  //     }
+  //   });
+  // }).catch((err) => {
+  //   log.error('Session store test failed:', err);
+  //   process.exit(1);
+  // });
 }
 
 const app = express();
@@ -148,7 +148,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/profile', ensureAuthenticated, profileRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
