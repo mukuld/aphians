@@ -28,8 +28,8 @@ const LandingPage = ({ currentUser }) => (
             className="items-center justify-center w-full object-cover"
           />
         </div>
-      <h1 className="text-4xl text-center justify-center font-bold mb-6 text-gray-900">Welcome Aphians - Reconnecting the 1992 Batch!</h1>
-      <div className="text-lg text-gray-700 mb-6 leading-relaxed">
+      <h1 className="text-4xl text-center justify-center font-bold mb-6 mt-6 text-gray-900">Welcome Aphians - Reconnecting the 1992 Batch!</h1>
+      <div className="text-lg text-gray-700 m-2 leading-relaxed">
 
       <p>
           Step back into the cherished halls of SB High School in Aurangabad — now proudly known as <a href="https://en.wikipedia.org/wiki/Chhatrapati_Sambhajinagar" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Chhatrapati Sambhajinagar</a> — where memories of laughter, learning, and friendship were forged. This site is a heartfelt tribute to our alma mater <a href="https://www.saraswatibhuvan.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">SB High School</a>, offering a space to reconnect with old friends.</p>

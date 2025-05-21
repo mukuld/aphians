@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import countries from '../data/countries.json'; // Ensure this path is correct
+import useIsMobile from '../utils/useIsMobile';
 
 const ProfileForm = ({ currentUser, onSave }) => {
   const [formData, setFormData] = useState({});
@@ -8,21 +9,22 @@ const ProfileForm = ({ currentUser, onSave }) => {
   const [error, setError] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false)   // Setting default state for success notification to false.
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const sortedCountries = useMemo(() => {
     return [...countries].sort((a, b) => a.name.localeCompare(b.name));
   }, []);
 
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent.toLowerCase() : '';
-      setIsMobile(/iphone|ipad|ipod|android|blackberry|windows phone|mobile/i.test(userAgent));
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // const [isMobile, setIsMobile] = useState(false);
+  // useEffect(() => {
+  //   const checkMobile = () => {
+  //     const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent.toLowerCase() : '';
+  //     setIsMobile(/iphone|ipad|ipod|android|blackberry|windows phone|mobile/i.test(userAgent));
+  //   };
+  //   checkMobile();
+  //   window.addEventListener('resize', checkMobile);
+  //   return () => window.removeEventListener('resize', checkMobile);
+  // }, []);
 
   // Refs for hidden date inputs
   const birthdayRef = useRef(null);
