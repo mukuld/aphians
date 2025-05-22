@@ -1,30 +1,59 @@
 aphians/
-├── client/         # React frontend
+├── client/             # React frontend
+│   ├── dist/         # Static assets (e.g., images, favicon)
+│   │   ├── assets/     # For logos, etc. (e.g., school-logo.png, google-logo.png, facebook-logo.png, sbhs.jpg)
+│   │   └── index.html    # Entry point of the app
 │   ├── src/
+│   │   ├── assets/     # For images imported directly into components (e.g., google-logo-g-rounded.png, facebook-logo-f.png)
+│   │   │   ├── facebook-logo-f.png
+│   │   │   ├── google-logo-g-rounded.png
+│   │   │   ├── sb-10f-logonobg.png
+│   │   │   └── sbhs.jpg
 │   │   ├── components/
-│   │   │   ├── Navbar.jsx
+│   │   │   ├── legal/  # Grouping legal documents
+│   │   │   │   ├── DataDeletion.jsx
+│   │   │   │   ├── PrivacyPolicy.jsx
+│   │   │   │   └── TermsOfUse.jsx
+│   │   │   ├── CommunityHub.jsx
+│   │   │   ├── Footer.jsx
 │   │   │   ├── LandingPage.jsx
+│   │   │   ├── Navbar.jsx
 │   │   │   ├── ProfileForm.jsx
 │   │   │   └── ProfilePage.jsx
+│   │   ├── data/       # Static data files
+│   │   │   └── countries.json
+│   │   ├── utils/      # Utility functions/hooks
+│   │   │   └── useIsMobile.js
 │   │   ├── App.jsx
-│   │   ├── index.jsx
-│   │   └── index.html
-│   ├── package.json
-│   └── .gitignore
-├── server/         # Node.js backend
+│   │   ├── index.css   # Global CSS (e.g., for html, body, #root height)
+│   │   ├── main.jsx    # Entry point for React app
+│   │   └── index.html  # Main HTML file for the React app
+│   ├── package.json    # Frontend dependencies
+│   ├── vite.config.js  # Vite configuration (if using Vite)
+│   └── .gitignore      # Git ignore for frontend
+├── server/             # Node.js backend
 │   ├── src/
 │   │   ├── config/
-│   │   │   └── db.js
+│   │   │   └── db.js   # Database connection
 │   │   ├── auth/
-│   │   │   └── passport.js
+│   │   │   ├── passport.js         # Passport configuration
+│   │   │   ├── passportSerializer.js # User serialization/deserialization
+│   │   │   └── strategies/         # Individual Passport strategies
+│   │   │       ├── facebookStrategy.js
+│   │   │       └── googleStrategy.js
+│   │   ├── middleware/ # Express middleware
+│   │   │   └── authMiddleware.js
 │   │   ├── routes/
-│   │   │   ├── auth.js
-│   │   │   └── profile.js
-│   │   └── index.js
-│   ├── uploads/            # Directory for uploaded files
-│   ├── package.json
-│   ├── .env
-│   └── .gitignore
-├── database/               # MySQL schema
-│   └── schema.sql
-└── README.md
+│   │   │   ├── auth.js   # Authentication routes (Google, Facebook, logout, current user)
+│   │   │   └── profile.js # Profile management routes
+│   │   ├── utils/      # Backend utility functions (e.g., logger)
+│   │   │   └── logger.js
+│   │   └── index.js    # Main server entry point
+│   ├── uploads/        # Directory for uploaded user profile photos
+│   ├── package.json    # Backend dependencies
+│   ├── .env            # Environment variables
+│   └── .gitignore      # Git ignore for backend
+├── database/           # MySQL schema
+│   └── schema.sql      # Database schema definition
+├── README.md           # Project README
+└── .gitignore          # Global .gitignore

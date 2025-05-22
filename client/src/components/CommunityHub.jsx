@@ -94,7 +94,7 @@ const CommunityHub = ({ currentUser }) => {
     <div className="bg-gray-100 flex flex-col">
       <div className="max-w-6xl mx-auto p-6 flex-grow">
       <div className="flex justify-between items-center mb-8">
-        <h2 className= "text-4xl font-bold text-gray-900">Community Hub</h2>
+        <h2 className= "text-4xl font-bold text-gray-900">Aphians Assembly</h2>
         <div className='flex space-x-2'>
           <button
           onClick={toggleView}
