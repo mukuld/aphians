@@ -6,6 +6,7 @@ import cors from 'cors';
 import passport from './auth/passport.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import processReminders from './routes/reminders.js';
 import { sessionMiddleware, sessionStore } from './middleware/sessionMiddleware.js';
 // import { ensureAuthenticated } from './middleware/authMiddleware.js';
 import log from './utils/logger.js';
@@ -20,7 +21,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Resolve upload directory from environment variable
-const uploadDir = resolve(__dirname, '..', process.env.UPLOAD_DIR || 'Uploads');
+const uploadDir = resolve(__dirname, '..', process.env.UPLOAD_DIR || 'uploads');
 log.debug('Resolved upload directory:', uploadDir);
 
 // Initialize server values
@@ -48,6 +49,23 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     log.error('Error: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in .env');
     process.exit(1);
   }
+
+  // Validate email-related environment variables for reminders
+  if (!process.env.EMAIL_HOST || !process.env.EMAIL_PORT || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    log.error("Error: Email configuration is incomplete. EMAIL_HOST, EMAIL_PORT, EMAIL_USER and EMAIL_PASS must be set in .env");
+    process.exit(1);
+  }
+
+  // Log that the reminder system is starting
+  log.info("Initializing reminder system...");
+  // The cron job in reminders.js starts automatically when the module is imported,
+  // but we can log its status or perform an initial run if needed.
+  // Since processReminders is already imported, the cron job is scheduled.
+  // We can optionally trigger an immediate run in production if desired:
+  // if (process.env.NODE_ENV !== 'development') {
+  //   log.info('Running initial reminder check on server startup...');
+  //   processReminders();
+  // }
 
   // Session store test
   // log.info('Testing session store...');

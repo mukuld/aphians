@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import countries from '../data/countries.json'; // Ensure this path is correct
 import useIsMobile from '../utils/useIsMobile';
+import moment from "moment-timezone";
+
+const timezones = moment.tz.names();
 
 const ProfileForm = ({ currentUser, onSave }) => {
   const [formData, setFormData] = useState({});
@@ -14,17 +17,6 @@ const ProfileForm = ({ currentUser, onSave }) => {
   const sortedCountries = useMemo(() => {
     return [...countries].sort((a, b) => a.name.localeCompare(b.name));
   }, []);
-
-  // const [isMobile, setIsMobile] = useState(false);
-  // useEffect(() => {
-  //   const checkMobile = () => {
-  //     const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent.toLowerCase() : '';
-  //     setIsMobile(/iphone|ipad|ipod|android|blackberry|windows phone|mobile/i.test(userAgent));
-  //   };
-  //   checkMobile();
-  //   window.addEventListener('resize', checkMobile);
-  //   return () => window.removeEventListener('resize', checkMobile);
-  // }, []);
 
   // Refs for hidden date inputs
   const birthdayRef = useRef(null);
@@ -52,7 +44,7 @@ const ProfileForm = ({ currentUser, onSave }) => {
 
         if (response.ok) {
           const data = await response.json();
-          console.log("ProfileFrom: Profile data fetched for form:", data);
+          // console.log("ProfileFrom: Profile data fetched for form:", data);
           setFormData({
             full_name: data.full_name || '',
             street_address: data.street_address || '',
@@ -81,6 +73,8 @@ const ProfileForm = ({ currentUser, onSave }) => {
             special_message: data.special_message || '',
             latest_photo_url: data.latest_photo || null,
             latest_photo: null,
+            timezone: data.timezone || "UTC",
+            receive_email_reminders: data.receive_email_reminders || true,    // Default to true as I am obtaining permission elsewhere.
           });
         } else {
           if (response.status === 404) {
@@ -92,7 +86,7 @@ const ProfileForm = ({ currentUser, onSave }) => {
               social_media_1: '', social_media_2: '', social_media_3: '', spouse_name: '',
               child_1_name: '', child_2_name: '', child_3_name: '', child_1_age: '',
               child_2_age: '', child_3_age: '', special_message: '', latest_photo: null,
-              latest_photo_url: null
+              latest_photo_url: null, timezone: "UTC", receive_email_reminders: true
             });
           } else {
             const errorText = await response.text();
@@ -422,6 +416,25 @@ const ProfileForm = ({ currentUser, onSave }) => {
                       />
                     )}
                   </div>
+                  <div>
+                    <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
+                      Time Zone
+                    </label>
+                    <select 
+                      id="timezone"
+                      name="timezone"
+                      value={formData.timezone || "UTC"}
+                      onChange={handleChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                      >
+                        <option value="">Select a time zone</option>
+                        {timezones.map((tz) => (
+                          <option key={tz} value={tz}>
+                            {tz}
+                          </option>
+                        ))}
+                      </select>
+                  </div>
                 </div>
               </div>
 
@@ -480,6 +493,18 @@ const ProfileForm = ({ currentUser, onSave }) => {
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                       placeholder="Enter your email"
                     />
+                  </div>
+                  <div className="mt-4">
+                    <label className="inline-flex items-center">
+                      <input
+                      type="checkbox"
+                      name="receive_email_reminders"
+                      checked={formData.receive_email_reminders || true} // Setting default to true
+                      onChange={handleChange}
+                      className="form-checkbox h-5 w-5 text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Recieve email reminders for birthdays and anniversaries</span>
+                    </label>
                   </div>
                 </div>
 
@@ -728,7 +753,7 @@ const ProfileForm = ({ currentUser, onSave }) => {
                   </div>
                 </div>
               </div>
-            </div> {/* This closing div was previously missing from the end of the right column */}
+            </div>
 
             <div className="flex justify-end space-x-4 mt-8">
               <button

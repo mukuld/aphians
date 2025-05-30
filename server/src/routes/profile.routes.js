@@ -7,6 +7,8 @@ import db from '../config/db.js';
 import { ensureAuthenticated } from '../middleware/authMiddleware.js';
 import log from '../utils/logger.js';
 import fs from 'fs';
+import { type } from "os";
+// import { error } from "console";
 
 dotenv.config();
 const router = express.Router();
@@ -16,7 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Use .env for upload directory
-const UPLOAD_DIR = process.env.UPLOAD_DIR || 'Uploads/';
+const UPLOAD_DIR = process.env.UPLOAD_DIR || '../../uploads/';
 
 // Ensure Uploads directory exists
 const uploadDirPath = path.join(__dirname, '../../', UPLOAD_DIR);
@@ -163,7 +165,9 @@ router.post('/', ensureAuthenticated, upload.single('latest_photo'), async (req,
       child_1_age,
       child_2_age,
       child_3_age,
-      special_message
+      special_message,
+      timezone,
+      receive_email_reminders
     } = req.body;
 
     let latest_photo = null;
@@ -200,6 +204,7 @@ router.post('/', ensureAuthenticated, upload.single('latest_photo'), async (req,
 
     const formattedBirthday = formatDate(birthday);
     const formattedAnniversary = formatDate(marriage_anniversary);
+    const formattedReceiveEmailReminders = receive_email_reminders === "true" || receive_email_reminders === true ? 1 : 0;
 
     const profileData = {
       user_id: userId,
@@ -228,7 +233,9 @@ router.post('/', ensureAuthenticated, upload.single('latest_photo'), async (req,
       child_2_age: child_2_age ? parseInt(child_2_age, 10) : null,
       child_3_age: child_3_age ? parseInt(child_3_age, 10) : null,
       special_message: special_message || null,
-      latest_photo // This will be either the new photo path or the retained old one
+      latest_photo, // This will be either the new photo path or the retained old one
+      timezone: timezone || "UTC",
+      receive_email_reminders: formattedReceiveEmailReminders
     };
 
     const query = 'INSERT INTO profiles SET ? ON DUPLICATE KEY UPDATE ?';
@@ -241,6 +248,74 @@ router.post('/', ensureAuthenticated, upload.single('latest_photo'), async (req,
   } catch (err) {
     log.error('POST /profile error:', { message: err.message, stack: err.stack, sessionID: req.sessionID });
     res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
+// GET profiles with upcoming birthdays or anniversaries for reminders
+router.get("/reminders/upcoming", ensureAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    log.debug("Fetching profiles for reminders for user: ", { userId, sessionID: req.sessionID});
+
+    // Current data in UTC for comparison
+    const now = new Date();
+    const currentMonth = now.getMonth() +1;
+    const currentDay = now.getDate();
+
+    // Query to find profiles with upcoming birthdays or anniversaries within the next 7 days
+    // Exclude the current user's profile and only include users who have opted into email reminders.
+    const query = `
+    SELECT user_id, full_name, email_id, birthday, marriage_anniversary, timezone
+    FROM profiles
+    WHERE user_id != ?
+    AND receive_email_reminders = 1
+    AND (
+      (MONTH(birthday) = ? AND DAY(birthday) BETWEEN ? AND ?)
+      OR (MONTH(marriage_anniversary) = ? AND DAY(marriage_anniversary) >= BETWEEN ? AND ?)
+  )
+  `;
+  const params = [
+    userId,
+    currentMonth, currentDay, currentDay + 7,
+    currentMonth, currentDay, currentDay + 7
+  ];
+
+  const [rows] = await db.query(query, params);
+  log.info("Fetched profiles for reminders: ", { count: rows.length, userId});
+
+  // Format the reminder data
+  const reminders = rows.map(profile => {
+    const events = [];
+    const birthday = profile.birthday ? new Date(profile.birthday) : null;
+    const anniversary = profile.marriage_anniversary ? new Date(profile.marriage_anniversary) : null;
+
+    if (birthday && birthday.getMonth() + 1 === currentMonth && birthday.getDate() >= currentDay && birthday.getDate() <= currentDay + 7) {
+      events.push({
+        type: "Birthday",
+        date: birthday.toISOString().split("T")[0]
+      });
+    }
+
+    if (anniversary && anniversary.getMonth() + 1 === currentMonth && anniversary.getDate() >= currentDay && anniversary.getDate() <= currentDay + 7) {
+      events.push({
+        type: "Marriage Anniversary",
+        date: anniversary.toISOString().split("T")[0]
+      });
+    }
+
+    return {
+      user_id: profile.user_id,
+      full_name: profile.full_name,
+      email_id: profile.email_id,
+      timezone: profile.timezone || "UTC",
+      events
+    }
+  }).filter(profile => profile.events.length > 0);
+
+  res.json(reminders);
+  } catch (err) {
+    log.error("GET /profile/reminders/upcoming error:", { message: err.message, stack: err.stack, sessionID: req.sessionID });
+    res.status(500).json({ error: "Server error", details: err.message});
   }
 });
 

@@ -64,7 +64,7 @@ const ProfilePage = ({ currentUser }) => {
       return `${BASE_URL}${photo}`;
     }
     if (photo.startsWith('/Uploads/')) { // Ensure this matches your backend upload path prefix
-      return `${BASE_URL}/aphians${photo.replace('/Uploads/', '/Uploads/')}`; // Corrected potential case issue if /Uploads/ vs /uploads/
+      return `${BASE_URL}/aphians${photo.replace('/Uploads/', '/uploads/')}`; // Corrected potential case issue if /Uploads/ vs /uploads/
     }
     return photo;
   };
@@ -167,12 +167,14 @@ const ProfileView = ({ profile, getImageUrl, isOwnProfile, handleEditMyProfile, 
         { label: "Zip", value: profile.zip },
         { label: "Country", value: profile.country },
         { label: "Birthday", value: formatDateForDisplay(profile.birthday) },
-        { label: "Marriage Anniversary", value: formatDateForDisplay(profile.marriage_anniversary) }
+        { label: "Marriage Anniversary", value: formatDateForDisplay(profile.marriage_anniversary) },
+        { label: "Time Zone", value: profile.timezone || "UTC" },
     ];
 
     const contactInfo = [
         { label: "Email", value: profile.email_id },
-        { label: "Phone", value: profile.phone_country_code ? `${profile.phone_country_code} ${profile.phone_number}` : profile.phone_number }
+        { label: "Phone", value: profile.phone_country_code ? `${profile.phone_country_code} ${profile.phone_number}` : profile.phone_number },
+        { label: "Email Reminders", value: profile.receive_email_reminders ? "Yes" : "No" },
     ];
 
     const professionalInfo = [
