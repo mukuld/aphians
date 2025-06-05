@@ -22,7 +22,7 @@ const facebookStrategy = (passport) => {
         return done(new Error('Invalid Facebook profile data'));
       }
 
-      // Query with timeout (mirroring your Google strategy)
+      // Query with timeout (mirroring my Google strategy)
       const [rows] = await Promise.race([
         db.query('SELECT * FROM users WHERE facebook_id = ?', [profile.id]),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Database query timeout')), 3000))
