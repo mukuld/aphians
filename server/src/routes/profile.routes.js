@@ -7,8 +7,8 @@ import db from '../config/db.js';
 import { ensureAuthenticated } from '../middleware/authMiddleware.js';
 import log from '../utils/logger.js';
 import fs from 'fs';
-import { type } from "os";
-// import { error } from "console";
+// import { type } from "os";
+import { formatToDDMMYYYY } from '../utils/dateUtils.js';
 
 dotenv.config();
 const router = express.Router();
@@ -121,8 +121,12 @@ router.get('/:userId', ensureAuthenticated, async (req, res) => {
       log.info('No profile found for user ID:', { userId });
       return res.status(404).json({ error: 'Profile not found' });
     }
+    const profile = rows[0];
+    // Convert dates to DDMMYYYY for response
+    profile.birthday = formatToDDMMYYYY(profile.birthday);
+    profile.marriage_anniversary = formatToDDMMYYYY(profile.marriage_anniversary);
     log.info('Profile fetched successfully:', { userId });
-    res.json(rows[0]);
+    res.json(profile);
   } catch (err) {
     log.error(`GET /profile/${req.params.userId} error:`, {
       message: err.message,
@@ -244,7 +248,11 @@ router.post('/', ensureAuthenticated, upload.single('latest_photo'), async (req,
 
     // Fetch the updated profile to return
     const [rows] = await db.query('SELECT * FROM profiles WHERE user_id = ?', [userId]);
-    res.json(rows[0]);
+    const updatedProfile = rows[0];
+    // Convert dates to DDMMYYYY for response
+    updatedProfile.birthday = formatToDDMMYYYY(updatedProfile.birthday);
+    updatedProfile.marriage_anniversary = formatToDDMMYYYY(updatedProfile.marriage_anniversary);
+    res.json(updatedProfile );
   } catch (err) {
     log.error('POST /profile error:', { message: err.message, stack: err.stack, sessionID: req.sessionID });
     res.status(500).json({ error: 'Server error', details: err.message });
@@ -292,14 +300,16 @@ router.get("/reminders/upcoming", ensureAuthenticated, async (req, res) => {
     if (birthday && birthday.getMonth() + 1 === currentMonth && birthday.getDate() >= currentDay && birthday.getDate() <= currentDay + 7) {
       events.push({
         type: "Birthday",
-        date: birthday.toISOString().split("T")[0]
+        date: formatToDDMMYYYY(birthday)
+        // date: birthday.toISOString().split("T")[0]
       });
     }
 
     if (anniversary && anniversary.getMonth() + 1 === currentMonth && anniversary.getDate() >= currentDay && anniversary.getDate() <= currentDay + 7) {
       events.push({
         type: "Marriage Anniversary",
-        date: anniversary.toISOString().split("T")[0]
+        date: formatToDDMMYYYY(anniversary)
+        // date: anniversary.toISOString().split("T")[0]
       });
     }
 

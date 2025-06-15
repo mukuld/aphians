@@ -4,6 +4,7 @@ import moment from 'moment-timezone';
 import dotenv from 'dotenv';
 import log from '../utils/logger.js';
 import db from '../config/db.js'; // Importing the database connection pool from db.js
+import { formatToDDMMYYYY } from '../utils/dateUtils.js';
 
 dotenv.config();
 
@@ -81,7 +82,7 @@ async function fetchUpcomingReminders() {
         if (bdayMonth === currentMonthInTz && bdayDay >= currentDayInTz && bdayDay <= currentDayInTz + 7) {
           events.push({
             type: 'Birthday',
-            date: bday.format('YYYY-MM-DD'),
+            date: formatToDDMMYYYY(bday)
           });
         }
       }
@@ -92,7 +93,7 @@ async function fetchUpcomingReminders() {
         if (anniMonth === currentMonthInTz && anniDay >= currentDayInTz && anniDay <= currentDayInTz + 7) {
           events.push({
             type: 'Marriage Anniversary',
-            date: anni.format('YYYY-MM-DD'),
+            date: formatToDDMMYYYY(anni)
           });
         }
       }
