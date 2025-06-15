@@ -3,7 +3,7 @@ import cron from 'node-cron';
 import moment from 'moment-timezone';
 import dotenv from 'dotenv';
 import log from '../utils/logger.js';
-import db from '../config/db.js'; // Importing the database connection pool from db.js
+import db from '../config/db.js';
 import { formatToDDMMYYYY } from '../utils/dateUtils.js';
 
 dotenv.config();
@@ -20,12 +20,11 @@ try {
       pass: process.env.EMAIL_PASS,
     },
   });
-  // Test the transporter
   await transporter.verify();
   log.info('Nodemailer transporter configured successfully');
 } catch (err) {
   log.error('Failed to configure Nodemailer transporter:', { message: err.message, stack: err.stack });
-  process.exit(1); // Exit if email setup fails, as it's critical
+  process.exit(1);
 }
 
 // Helper to send email
@@ -39,9 +38,10 @@ async function sendEmail(to, subject, text) {
     };
     const info = await transporter.sendMail(mailOptions);
     log.info('Email sent successfully:', { messageId: info.messageId, to });
+    return true;
   } catch (err) {
     log.error('Error sending email:', { message: err.message, stack: err.stack, to });
-    // throw err;
+    return false;
   }
 }
 
@@ -49,11 +49,14 @@ async function sendEmail(to, subject, text) {
 async function fetchUpcomingReminders() {
   try {
     const now = new Date();
-    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentMonth = now.getMonth() + 1;
     const currentDay = now.getDate();
 
-    // Query to fetch all profiles with upcoming events (same logic as in profile.routes.js)
-    // We fetch all profiles and filter in code to respect time zones
+    log.debug('Querying for events between:', { 
+      start: `${currentDay}/${currentMonth}`, 
+      end: `${currentDay + 7}/${currentMonth}` 
+    });
+
     const query = `
       SELECT user_id, full_name, email_id, birthday, marriage_anniversary, timezone, receive_email_reminders
       FROM profiles
@@ -63,8 +66,12 @@ async function fetchUpcomingReminders() {
         OR (MONTH(marriage_anniversary) = ? AND DAY(marriage_anniversary) BETWEEN ? AND ?)
       )
     `;
-    const [rows] = await db.query(query);
-    log.debug('Fetched profiles for reminders:', { count: rows.length });
+    const params = [
+      currentMonth, currentDay, currentDay + 7,
+      currentMonth, currentDay, currentDay + 7
+    ];
+    const [rows] = await db.query(query, params);
+    log.debug('Fetched profiles for reminders:', { count: rows.length, profiles: rows });
 
     const reminders = [];
     for (const profile of rows) {
@@ -79,6 +86,14 @@ async function fetchUpcomingReminders() {
         const bday = moment(birthday).tz(userTz);
         const bdayMonth = bday.month() + 1;
         const bdayDay = bday.date();
+        log.debug('Checking birthday:', { 
+          user_id, 
+          birthday: bday.format('YYYY-MM-DD'), 
+          bdayMonth, 
+          bdayDay, 
+          currentMonthInTz, 
+          currentDayInTz 
+        });
         if (bdayMonth === currentMonthInTz && bdayDay >= currentDayInTz && bdayDay <= currentDayInTz + 7) {
           events.push({
             type: 'Birthday',
@@ -90,6 +105,14 @@ async function fetchUpcomingReminders() {
         const anni = moment(marriage_anniversary).tz(userTz);
         const anniMonth = anni.month() + 1;
         const anniDay = anni.date();
+        log.debug('Checking anniversary:', { 
+          user_id, 
+          marriage_anniversary: anni.format('YYYY-MM-DD'), 
+          anniMonth, 
+          anniDay, 
+          currentMonthInTz, 
+          currentDayInTz 
+        });
         if (anniMonth === currentMonthInTz && anniDay >= currentDayInTz && anniDay <= currentDayInTz + 7) {
           events.push({
             type: 'Marriage Anniversary',
@@ -109,7 +132,7 @@ async function fetchUpcomingReminders() {
       }
     }
 
-    log.info('Processed reminders:', { count: reminders.length });
+    log.info('Processed reminders:', { count: reminders.length, reminders });
     return reminders;
   } catch (err) {
     log.error('Error fetching upcoming reminders:', { message: err.message, stack: err.stack });
@@ -134,8 +157,11 @@ async function processReminders() {
       const subject = `Upcoming Event Reminder: ${full_name}`;
       const text = `Hello,\n\nThis is a reminder that ${full_name} has the following upcoming event(s):\n${eventMessages}.\n\nBest regards,\nAphians Team`;
 
-      await sendEmail(email_id, subject, text);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay to avoid rate limiting.
+      const emailSent = await sendEmail(email_id, subject, text);
+      if (!emailSent) {
+        log.warn('Email sending failed for user:', { user_id: reminder.user_id, email: email_id });
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
       log.info('Processed reminder for user:', { user_id: reminder.user_id, email: email_id, events: eventMessages });
     }
 
@@ -145,9 +171,8 @@ async function processReminders() {
   }
 }
 
-// Schedule the reminder job to run daily at 8:00 AM UTC
-// Adjust the time as needed, or make it configurable via .env
-cron.schedule('0 8 * * *', () => {
+// Schedule the reminder job to run every 5 minutes for testing
+cron.schedule('* 4 * * *', () => {
   log.info('Running scheduled reminder job...');
   processReminders();
 }, {
