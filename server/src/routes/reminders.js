@@ -9,7 +9,8 @@ import { formatToDDMMYYYY } from '../utils/dateUtils.js';
 dotenv.config();
 
 // Configure Nodemailer transporter
-let transporter;
+let transporter = null;
+log.warn("Nodemailer disabled to skip Gmail setup")
 try {
   transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.example.com',
