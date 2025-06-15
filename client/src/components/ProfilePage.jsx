@@ -11,6 +11,27 @@ const ProfilePage = ({ currentUser }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const BASE_URL = process.env.REACT_APP_BASE_URL || 'https://www.dharwadkar.com';
 
+  // Helper to format dates to DD/MM/YYYY
+  const formatDateForDisplay = (dateInput) => {
+    if (!dateInput) return 'N/A';
+    // If the date is already in DD/MM/YYYY format (e.g., "17/03/1977"), return as-is
+    if (typeof dateInput === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateInput)) {
+      return dateInput;
+    }
+    // Otherwise, assume it's an ISO date string or Date object
+    try {
+      const date = new Date(dateInput);
+      if (isNaN(date.getTime())) return 'N/A';
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const year = date.getUTCFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (e) {
+      console.error("Error formatting date:", dateInput, e);
+      return 'N/A';
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -106,6 +127,7 @@ const ProfilePage = ({ currentUser }) => {
             getImageUrl={getImageUrl}
             isOwnProfile={isOwnProfile}
             handleEditMyProfile={handleEditMyProfile}
+            formatDateForDisplay={formatDateForDisplay}
             handleImageClick={handleImageClick}
           />
           {isLightboxOpen && profile.latest_photo && (
@@ -127,7 +149,7 @@ const ProfilePage = ({ currentUser }) => {
   );
 };
 
-const ProfileView = ({ profile, getImageUrl, isOwnProfile, handleEditMyProfile, handleImageClick }) => {
+const ProfileView = ({ profile, getImageUrl, isOwnProfile, handleEditMyProfile, formatDateForDisplay, handleImageClick }) => {
   const personalInfo = [
     { label: "Full Name", value: profile.full_name },
     { label: "Street Address", value: profile.street_address },
@@ -135,8 +157,8 @@ const ProfileView = ({ profile, getImageUrl, isOwnProfile, handleEditMyProfile, 
     { label: "State", value: profile.state },
     { label: "Zip", value: profile.zip },
     { label: "Country", value: profile.country },
-    { label: "Birthday", value: profile.birthday || 'N/A' }, // Directly use DDMMYYYY from backend
-    { label: "Marriage Anniversary", value: profile.marriage_anniversary || 'N/A' }, // Directly use DDMMYYYY from backend
+    { label: "Birthday", value: formatDateForDisplay(profile.birthday) },
+    { label: "Marriage Anniversary", value: formatDateForDisplay(profile.marriage_anniversary) },
     { label: "Time Zone", value: profile.timezone || "UTC" },
   ];
 
