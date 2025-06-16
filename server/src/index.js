@@ -2,13 +2,11 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path, { resolve } from 'path';
 import cors from 'cors';
-// import { v4 as uuidv4 } from 'uuid';
 import passport from './auth/passport.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import processReminders from './routes/reminders.js';
 import { sessionMiddleware, sessionStore } from './middleware/sessionMiddleware.js';
-// import { ensureAuthenticated } from './middleware/authMiddleware.js';
 import log from './utils/logger.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -25,8 +23,6 @@ const uploadDir = resolve(__dirname, '..', process.env.UPLOAD_DIR || 'uploads');
 log.debug('Resolved upload directory:', uploadDir);
 
 // Initialize server values
-// const bootId = uuidv4();
-// const pid = process.pid;
 const port = process.env.PORT || 5000;
 const appName = process.env.APP_NAME || 'Aphians';
 const domain = process.env.DOMAIN || 'dharwadkar.com';
@@ -34,12 +30,6 @@ const sessionCookieName = process.env.SESSION_COOKIE_NAME || 'connect.sid';
 const originUrl = `https://www.${domain}`;
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  // log.debug(`Boot ID: ${bootId}`);
-  // log.debug(`App Name: ${appName}`);
-  // log.debug('SESSION_SECRET: ' + (process.env.SESSION_SECRET ? 'Set' : 'Not set'));
-  // log.debug('Runtime __dirname: ' + __dirname);
-  // log.debug('Expected .env path: ' + path.resolve(__dirname, '../.env'));
-
   if (!process.env.SESSION_SECRET) {
     log.error('Error: SESSION_SECRET is not set in .env');
     process.exit(1);
@@ -58,47 +48,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   // Log that the reminder system is starting
   log.info("Initializing reminder system...");
-  // The cron job in reminders.js starts automatically when the module is imported,
-  // but we can log its status or perform an initial run if needed.
-  // Since processReminders is already imported, the cron job is scheduled.
-  // We can optionally trigger an immediate run in production if desired:
-  // if (process.env.NODE_ENV !== 'development') {
-  //   log.info('Running initial reminder check on server startup...');
-  //   processReminders();
-  // }
-
-  // Session store test
-  // log.info('Testing session store...');
-  // const testSessionId = `test-session-${Date.now()}`;
-  // await new Promise((resolve, reject) => {
-  //   sessionStore.set(testSessionId, {
-  //     cookie: { maxAge: 24 * 60 * 60 * 1000 },
-  //     data: { test: 'test-data' }
-  //   }, (err) => {
-  //     if (err) {
-  //       log.error('Session store write error:', err);
-  //       reject(err);
-  //     } else {
-  //       log.info('Session store write successful');
-  //       sessionStore.get(testSessionId, (err, session) => {
-  //         if (err) {
-  //           log.error('Session store read error:', err);
-  //           reject(err);
-  //         } else {
-  //           log.info(`Session read: ${JSON.stringify(session)}`);
-  //           sessionStore.destroy(testSessionId, (err) => {
-  //             if (err) log.error('Session destroy error:', err);
-  //             log.info('Test session destroyed');
-  //             resolve();
-  //           });
-  //         }
-  //       });
-  //     }
-  //   });
-  // }).catch((err) => {
-  //   log.error('Session store test failed:', err);
-  //   process.exit(1);
-  // });
 }
 
 const app = express();
@@ -159,11 +108,24 @@ app.use(passport.session());
 
 app.use('/uploads', express.static(uploadDir));
 
+// Routes
 app.get('/', (req, res) => {
   res.json({ message: `${appName} Server Running` });
 });
 
-// Routes
+// Add /run-reminders endpoint (publicly accessible for testing)
+app.get('/aphians/run-reminders', async (req, res) => {
+  log.info('Received request to /aphians/run-reminders endpoint');
+  try {
+    await processReminders();
+    log.info('Reminders processed successfully via /aphians/run-reminders');
+    res.status(200).json({ message: 'Reminders processed successfully' });
+  } catch (err) {
+    log.error('Error processing reminders via /aphians/run-reminders:', { message: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to process reminders' });
+  }
+});
+
 app.use('/auth', authRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
