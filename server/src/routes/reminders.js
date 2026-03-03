@@ -55,7 +55,15 @@ async function configureTransporterWithRetry() {
 
 // Initialize transporter with retry
 log.info('Calling configureTransporterWithRetry...');
-await configureTransporterWithRetry();
+log.info('Initiating Nodemailer transporter configuration in background...');
+//await configureTransporterWithRetry();
+configureTransporterWithRetry()
+  .then(() => {
+	  log.info("Finished configuring Nodemail transporter.");
+  })
+  .catch((err) => {
+	  log.error("Nodemailer background configuration failed:", err);
+  });
 log.info('Finished configuring Nodemailer transporter.');
 
 // Helper to send email (modified to use BCC)
