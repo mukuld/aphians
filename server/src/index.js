@@ -5,7 +5,7 @@ import cors from 'cors';
 import passport from './auth/passport.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
-import processReminders from './routes/reminders.js';
+import processReminders, { initReminders } from './routes/reminders.js';
 import { sessionMiddleware, sessionStore } from './middleware/sessionMiddleware.js';
 import log from './utils/logger.js';
 import { fileURLToPath } from 'url';
@@ -139,6 +139,9 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(port, '0.0.0.0', () => {
   log.info(`${appName} Server running on port ${port}`);
+
+  //Initialize reminders now that the server is live.
+  initReminders();
 }).on('error', (err) => {
   log.error('Server startup error:', err);
   process.exit(1);

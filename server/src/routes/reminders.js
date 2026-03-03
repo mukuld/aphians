@@ -55,6 +55,7 @@ async function configureTransporterWithRetry() {
 
 // Initialize transporter with retry
 log.info('Calling configureTransporterWithRetry...');
+<<<<<<< HEAD
 log.info('Initiating Nodemailer transporter configuration in background...');
 //await configureTransporterWithRetry();
 configureTransporterWithRetry()
@@ -63,6 +64,15 @@ configureTransporterWithRetry()
   })
   .catch((err) => {
 	  log.error("Nodemailer background configuration failed:", err);
+=======
+//await configureTransporterWithRetry();
+configureTransporterWithRetry()
+  .then(() => {
+    log.info('Finished configuring Nodemailer transporter.');
+  })
+  .catch((err) => {
+    log.error("Nodemailer background configruation failed:", err);
+>>>>>>> f819326087fc21ae68083397b48b0ac4e353edcf
   });
 log.info('Finished configuring Nodemailer transporter.');
 
@@ -263,6 +273,34 @@ async function processReminders() {
   }
 }
 
+// Function to initialize everything without blocking the main server
+export const initReminders = async () => {
+  log.info('Initializing reminder system...');
+  
+  // 1. Configure Email (Non-blocking)
+  configureTransporterWithRetry()
+    .then(() => log.info("Nodemailer setup complete."))
+    .catch(err => log.error("Nodemailer setup failed:", err));
+
+  // 2. Schedule the Cron Job
+  cron.schedule(process.env.CRON_SCHEDULE, () => {
+    log.info('Running scheduled reminder job...');
+    processReminders();
+  }, {
+    scheduled: true,
+    timezone: 'UTC',
+  });
+
+  // 3. Run immediately if in development
+  if (process.env.NODE_ENV === 'development') {
+    log.info('Running reminders immediately on startup (development mode)...');
+    processReminders();
+  }
+};
+
+export default processReminders;
+/*
+
 // Schedule the reminder job to run daily using the schedule from .env
 cron.schedule(process.env.CRON_SCHEDULE, () => {
   log.info('Running scheduled reminder job...');
@@ -278,4 +316,8 @@ if (process.env.NODE_ENV === 'development') {
   processReminders();
 }
 
+<<<<<<< HEAD
 export default processReminders;
+=======
+export default processReminders;*/
+>>>>>>> f819326087fc21ae68083397b48b0ac4e353edcf
