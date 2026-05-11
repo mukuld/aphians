@@ -9,6 +9,10 @@ dotenv.config();
 
 const router = Router();
 
+// ============================================================================
+// Google Authentication Routes
+// ============================================================================
+
 // Route to initiate Google OAuth
 router.get('/google', passport.authenticate('google', {
   scope: ['profile', 'email']
@@ -51,51 +55,68 @@ router.get('/google/callback',
       const [schema] = await db.query('SHOW COLUMNS FROM profiles');
       log.debug('[/auth/google/callback] Profiles table schema:', { schema });
 
-      const profileQuerySql = 'SELECT user_id FROM profiles WHERE user_id = ? FOR SHARE';
+      // FIX: MariaDB compatible syntax
+      const profileQuerySql = 'SELECT user_id FROM profiles WHERE user_id = ? LOCK IN SHARE MODE';
       const profileQueryParams = [userId];
       log.info('[/auth/google/callback] Executing profile query:', { sql: profileQuerySql, params: profileQueryParams });
 
       let rows;
       let retries = 2;
       const startTime = Date.now();
+      
       while (retries > 0) {
+        let timeoutId; // FIX: Store the timer so we can clear it
+        
         try {
           const connection = await db.getConnection();
           try {
             await connection.query('BEGIN');
+            
+            // FIX: Properly clearable timer
+            const timeoutPromise = new Promise((_, reject) => {
+              timeoutId = setTimeout(() => {
+                reject(new Error('TIMEOUT'));
+              }, 30000);
+            });
+
             [rows] = await Promise.race([
               connection.query(profileQuerySql, profileQueryParams),
-              new Promise((_, reject) => setTimeout(() => {
-                log.error('[/auth/google/callback] Database query for profile TIMEOUT (30 seconds)');
-                reject(new Error('Database query for profile timeout'));
-              }, 30000)) // Match acquireTimeout
+              timeoutPromise
             ]);
+            
             await connection.query('COMMIT');
             const duration = (Date.now() - startTime) / 1000;
             log.info('[/auth/google/callback] Profile query completed in:', { duration: `${duration} seconds` });
+            break; // Success, exit retry loop
+            
           } catch (error) {
             await connection.query('ROLLBACK');
             throw error;
           } finally {
+            clearTimeout(timeoutId); // FIX: Stop the phantom log
             connection.release();
           }
-          break; // Success, exit retry loop
-        } catch (timeoutError) {
+          
+        } catch (dbError) {
           retries--;
           const duration = (Date.now() - startTime) / 1000;
-          log.warn(`[/auth/google/callback] Query timed out after ${duration} seconds, retries left: ${retries}`, timeoutError.message);
+          
+          // FIX: Log the ACTUAL database error
+          log.warn(`[/auth/google/callback] Query failed after ${duration} seconds, retries left: ${retries}. Reason: ${dbError.message}`);
+          
           if (retries === 0) {
-            log.warn('[/auth/google/callback] All retries exhausted, assuming profile does not exist');
+            log.warn('[/auth/google/callback] All retries exhausted, attempting to create profile.');
             const connection = await db.getConnection();
             try {
               await connection.query('BEGIN');
-              await connection.query('INSERT INTO profiles (user_id, created_at) VALUES (?, NOW())', [userId]);
+              // FIX: Removed missing created_at column
+              await connection.query('INSERT INTO profiles (user_id) VALUES (?)', [userId]);
               await connection.query('COMMIT');
               log.info('[/auth/google/callback] Created new profile for user:', { userId });
-              rows = []; // Indicate that a new profile was created, so redirection will be to profile setup
+              rows = []; 
             } catch (insertError) {
               await connection.query('ROLLBACK');
-              log.error('[/auth/google/callback] Failed to create new profile after timeout:', insertError.message);
+              log.error('[/auth/google/callback] Failed to create new profile:', insertError.message);
               throw insertError;
             } finally {
               connection.release();
@@ -146,7 +167,9 @@ router.get('/google/callback',
   }
 );
 
+// ============================================================================
 // Facebook Authentication Routes
+// ============================================================================
 
 // Route to initiate Facebook OAuth
 router.get('/facebook', passport.authenticate('facebook'));
@@ -189,51 +212,68 @@ router.get('/facebook/callback',
       // const [schema] = await db.query('SHOW COLUMNS FROM profiles');
       // log.debug('[/auth/facebook/callback] Profiles table schema:', { schema });
 
-      const profileQuerySql = 'SELECT user_id FROM profiles WHERE user_id = ? FOR SHARE';
+      // FIX: MariaDB compatible syntax
+      const profileQuerySql = 'SELECT user_id FROM profiles WHERE user_id = ? LOCK IN SHARE MODE';
       const profileQueryParams = [userId];
       log.info('[/auth/facebook/callback] Executing profile query:', { sql: profileQuerySql, params: profileQueryParams });
 
       let rows;
       let retries = 2;
       const startTime = Date.now();
+      
       while (retries > 0) {
+        let timeoutId; // FIX: Store the timer so we can clear it
+        
         try {
           const connection = await db.getConnection();
           try {
             await connection.query('BEGIN');
+            
+            // FIX: Properly clearable timer
+            const timeoutPromise = new Promise((_, reject) => {
+              timeoutId = setTimeout(() => {
+                reject(new Error('TIMEOUT'));
+              }, 30000);
+            });
+
             [rows] = await Promise.race([
               connection.query(profileQuerySql, profileQueryParams),
-              new Promise((_, reject) => setTimeout(() => {
-                log.error('[/auth/facebook/callback] Database query for profile TIMEOUT (30 seconds)');
-                reject(new Error('Database query for profile timeout'));
-              }, 30000)) // Match acquireTimeout
+              timeoutPromise
             ]);
+            
             await connection.query('COMMIT');
             const duration = (Date.now() - startTime) / 1000;
             log.info('[/auth/facebook/callback] Profile query completed in:', { duration: `${duration} seconds` });
+            break; // Success, exit retry loop
+            
           } catch (error) {
             await connection.query('ROLLBACK');
             throw error;
           } finally {
+            clearTimeout(timeoutId); // FIX: Stop the phantom log
             connection.release();
           }
-          break; // Success, exit retry loop
-        } catch (timeoutError) {
+          
+        } catch (dbError) {
           retries--;
           const duration = (Date.now() - startTime) / 1000;
-          log.warn(`[/auth/facebook/callback] Query timed out after ${duration} seconds, retries left: ${retries}`, timeoutError.message);
+          
+          // FIX: Log the ACTUAL database error
+          log.warn(`[/auth/facebook/callback] Query failed after ${duration} seconds, retries left: ${retries}. Reason: ${dbError.message}`);
+          
           if (retries === 0) {
-            log.warn('[/auth/facebook/callback] All retries exhausted, assuming profile does not exist');
+            log.warn('[/auth/facebook/callback] All retries exhausted, attempting to create profile.');
             const connection = await db.getConnection();
             try {
               await connection.query('BEGIN');
-              await connection.query('INSERT INTO profiles (user_id, created_at) VALUES (?, NOW())', [userId]);
+              // FIX: Removed missing created_at column
+              await connection.query('INSERT INTO profiles (user_id) VALUES (?)', [userId]);
               await connection.query('COMMIT');
               log.info('[/auth/facebook/callback] Created new profile for user:', { userId });
-              rows = []; // Indicate that a new profile was created, so redirection will be to profile setup
+              rows = []; 
             } catch (insertError) {
               await connection.query('ROLLBACK');
-              log.error('[/auth/facebook/callback] Failed to create new profile after timeout:', insertError.message);
+              log.error('[/auth/facebook/callback] Failed to create new profile:', insertError.message);
               throw insertError;
             } finally {
               connection.release();
@@ -283,6 +323,10 @@ router.get('/facebook/callback',
     }
   }
 );
+
+// ============================================================================
+// Utility / Session Routes
+// ============================================================================
 
 // GET current authenticated user's status/data
 router.get('/current', ensureAuthenticated, (req, res) => {

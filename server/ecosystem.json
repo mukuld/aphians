@@ -1,0 +1,7 @@
+{
+  "apps": [{
+    "name": "aphians-server",
+    "cwd": "/home/mukul/src/aphians/server",
+    "script": "src/index.js"
+  }]
+}
